@@ -5,6 +5,7 @@ import {
   parseCsv,
   synthesiseStructure,
   type ColumnMapping,
+  rootsFor,
   type MappedFile,
   type OptionNameFormat,
 } from '@first-floor/core';
@@ -259,6 +260,11 @@ export function mapperView(h: MapperHandlers): HTMLElement {
       table(['Root', 'Position', 'Strike', 'Expiry', 'Contracts', 'Price'], sample),
     ]);
 
+    // Only the roots the chosen account actually uses. A fund complex's export
+    // carries dozens across dozens of structures, and demanding a level for
+    // every one of them buries the handful that matter.
+    const activeRoots = rootsFor(mapped, account);
+
     // --- account picker -----------------------------------------------------
     if (mapped.accounts.length > 1) {
       append(resultPanel, [
@@ -283,19 +289,21 @@ export function mapperView(h: MapperHandlers): HTMLElement {
     append(resultPanel, [
       el('h3', {}, 'What the underlyings are worth'),
       el('p', { class: 'small' },
-        'A holdings file records positions, not levels, so these are the one thing that has to be ' +
-        'typed. Nothing here is guessed at.'),
+        'Today’s price of each thing the contracts are written on — 6800 for an index, 630 for an ' +
+        'ETF. A holdings file records what is owned, not where the underlying is trading, so this ' +
+        'is the one thing that has to be typed. A strike of 5800 says nothing until it can be set ' +
+        'against a level.'),
     ]);
 
     // Asked first, because every ratio below is quoted against it. The default
     // is simply the first root found, which is arbitrary — a file naming a
     // proxy before the index would otherwise invite the ratios to be entered
     // upside down.
-    if (mapped.roots.length > 1) {
+    if (activeRoots.length > 1) {
       append(resultPanel, [
         el('div', { class: 'field' },
           el('label', {}, 'Which one is the index'),
-          select(mapped.roots.map((r) => [r, r] as [string, string]), referenceId, (v) => {
+          select(activeRoots.map((r) => [r, r] as [string, string]), referenceId, (v) => {
             referenceId = v;
             referenceChosenByUser = true;
             refresh();
@@ -307,7 +315,7 @@ export function mapperView(h: MapperHandlers): HTMLElement {
       ]);
     }
 
-    for (const rootName of mapped.roots) {
+    for (const rootName of activeRoots) {
       append(resultPanel, [
         el('div', { class: 'field' },
           el('label', {}, `${rootName} level today`),
@@ -355,9 +363,13 @@ export function mapperView(h: MapperHandlers): HTMLElement {
         el('button', {
           class: 'primary',
           onclick: () => {
-            const missing = mapped!.roots.filter((r) => levels[r] === undefined);
+            const missing = activeRoots.filter((r) => levels[r] === undefined);
             if (missing.length > 0) {
-              problem.textContent = `Give a level for ${missing.join(', ')} before going on.`;
+              problem.textContent =
+                `Still need today’s price for ${missing.join(', ')} — the level each contract is ` +
+                'written on, such as 6800 for an index or 630 for an ETF. A holdings file records ' +
+                'what is owned, not where the underlying is trading, so a strike cannot be placed ' +
+                'without it.';
               return;
             }
             problem.textContent = '';

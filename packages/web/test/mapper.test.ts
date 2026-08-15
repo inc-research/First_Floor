@@ -121,7 +121,7 @@ describe('the column mapper', () => {
     assert.match(v.textContent, /PXY level today/);
     assert.match(v.textContent, /REF level today/);
     assert.match(v.textContent, /size relative to/);
-    assert.match(v.textContent, /Nothing here is guessed at/);
+    assert.match(v.textContent, /A strike of 5800 says nothing until it can be set against a level/);
   });
 
   it('refuses to build until the levels are given', () => {
@@ -129,7 +129,8 @@ describe('the column mapper', () => {
     const v = openWithExample({ onDraft: (j) => { handed = j; } });
     v.findAll('button').find((b) => b.textContent.includes('Build the structure'))!.click();
     assert.equal(handed, null);
-    assert.match(v.textContent, /Give a level for/);
+    assert.match(v.textContent, /Still need today’s price for/);
+    assert.match(v.textContent, /records what is owned, not where the underlying is trading/);
   });
 
   it('builds a valid structure document once told the levels', () => {
@@ -156,10 +157,15 @@ describe('the column mapper', () => {
       s.findAll('option').some((o) => o.getAttribute('value') === 'FUND-B'))!;
     picker.value = 'FUND-B';
     picker.dispatch('change');
-    pickIndex(v, 'REF');
-    setNumber(v, 'PXY level today', '774.85');
+
+    // FUND-B holds contracts on REF alone, so PXY is no longer asked about at
+    // all -- neither a level nor a ratio -- and with one root there is no index
+    // left to choose. This is the fix for demanding a level for every root in
+    // a file that holds a whole fund complex.
+    assert.ok(!v.textContent.includes('PXY level today'), 'PXY belongs to the other account');
+    assert.ok(!v.textContent.includes('Which one is the index'), 'one root, nothing to pick');
+
     setNumber(v, 'REF level today', '109.61');
-    setNumber(v, 'PXY size relative to', '0.1');
     v.findAll('button').find((b) => b.textContent.includes('Build the structure'))!.click();
 
     const doc = JSON.parse(handed!);

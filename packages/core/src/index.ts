@@ -162,6 +162,7 @@ export {
 } from './adapters/optionNames.ts';
 export {
   applyMapping,
+  rootsFor,
   synthesiseStructure,
   type ColumnMapping,
   type MappedFile,

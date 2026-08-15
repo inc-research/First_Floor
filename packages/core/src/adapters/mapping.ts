@@ -47,6 +47,24 @@ export interface ColumnMapping {
 
 export type RowKind = 'option' | 'equity' | 'cash' | 'unreadable';
 
+/**
+ * The option roots actually used by one account.
+ *
+ * A file holding a whole fund complex carries dozens of roots across dozens of
+ * structures, and only the handful belonging to the structure under review need
+ * an underlying level. Asking for the rest is asking for work that changes
+ * nothing, and it hides the roots that do matter in a list nobody will read.
+ */
+export function rootsFor(file: MappedFile, account: string | null): string[] {
+  return [
+    ...new Set(
+      file.rows
+        .filter((r) => r.option && (account === null || r.account === account))
+        .map((r) => r.option!.root),
+    ),
+  ].sort();
+}
+
 export interface MappedRow {
   kind: RowKind;
   account: string | null;
@@ -71,7 +89,7 @@ export interface MappedFile {
   table: CsvTable;
   rows: MappedRow[];
   accounts: string[];
-  /** Distinct option roots found, which each need an underlying and a level. */
+  /** Every distinct option root in the file, across all accounts. */
   roots: string[];
   counts: Record<RowKind, number>;
 }
@@ -259,8 +277,10 @@ export function synthesiseStructure(file: MappedFile, input: SynthesisInput): Sy
     );
   }
 
+  // Only the roots this account actually uses. A fund complex's file carries
+  // dozens, and an underlying nothing points at is noise in the document.
   const underlyings: Record<string, Underlying> = {};
-  for (const root of file.roots) {
+  for (const root of rootsFor(file, input.account ?? null)) {
     const level = input.levels[root];
     if (level === undefined) continue;
     const ratio = input.ratios?.[root] ?? (root === input.reference_id ? 1 : undefined);
