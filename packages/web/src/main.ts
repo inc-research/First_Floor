@@ -20,6 +20,7 @@ import {
 } from './state.ts';
 import { startView } from './views/start.ts';
 import { manualView } from './views/manual.ts';
+import { mapperView } from './views/mapper.ts';
 import { reviewView } from './views/review.ts';
 import { reportView } from './views/report.ts';
 import { limitationsView } from './views/limitations.ts';
@@ -87,6 +88,17 @@ function body(): HTMLElement {
           go('review');
         },
         onManual: () => go('manual'),
+        onMapCsv: () => go('mapper'),
+      });
+
+    case 'mapper':
+      return mapperView({
+        onDraft: (json) => {
+          setDraft(json);
+          go('review');
+        },
+        onManual: () => go('manual'),
+        onCancel: () => go('start'),
       });
 
     case 'manual':

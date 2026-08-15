@@ -1,0 +1,21 @@
+{
+  "name": "@first-floor/mcp",
+  "version": "0.2.0",
+  "description": "A local stdio MCP server for First Floor. Runs on your machine; never hosted.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "first-floor-mcp": "./dist/server.js"
+  },
+  "main": "./dist/server.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "test": "node --test 'test/**/*.test.ts'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  }
+}

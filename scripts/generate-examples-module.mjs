@@ -27,6 +27,16 @@ const DOCS = [
   ['referenceComposition', 'reference_composition_synthetic.json'],
 ];
 
+/** Shipped column mappings, offered in the mapper so a new file usually needs no work. */
+const MAPPINGS = [
+  ['mappingOccLongForm', 'mapping_occ_long_form.json'],
+  ['mappingSpacedDescription', 'mapping_spaced_description.json'],
+  ['mappingExplicitColumns', 'mapping_explicit_columns.json'],
+];
+
+/** Raw text, not JSON: a worked holdings file so the CSV path can be tried without one. */
+const TEXT = [['exampleHoldingsCsv', 'holdings_synthetic.csv']];
+
 export function render() {
   const parts = [
     '// SPDX-License-Identifier: MIT',
@@ -39,10 +49,20 @@ export function render() {
     ' */',
     '',
   ];
-  for (const [name, file] of DOCS) {
+  for (const [name, file] of [...DOCS, ...MAPPINGS]) {
     const json = JSON.parse(readFileSync(new URL(`examples/${file}`, ROOT), 'utf8'));
     parts.push(`export const ${name} = ${JSON.stringify(json, null, 2)} as const;`, '');
   }
+  for (const [name, file] of TEXT) {
+    const text = readFileSync(new URL(`examples/${file}`, ROOT), 'utf8');
+    parts.push(`export const ${name} = ${JSON.stringify(text)};`, '');
+  }
+  parts.push(
+    'export const shippedMappings = [',
+    ...MAPPINGS.map(([name]) => `  ${name},`),
+    '] as const;',
+    '',
+  );
   return parts.join('\n');
 }
 

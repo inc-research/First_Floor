@@ -14,7 +14,7 @@ import {
 } from '@first-floor/core';
 import type { Voice } from '@first-floor/copy';
 
-export type View = 'start' | 'manual' | 'review' | 'report' | 'limitations';
+export type View = 'start' | 'mapper' | 'manual' | 'review' | 'report' | 'limitations';
 
 export interface SliderState {
   betaDown: number;

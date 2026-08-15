@@ -71,6 +71,11 @@ export class FakeElement extends FakeNode {
 
   setAttribute(name: string, value: string): void {
     this.attributes.set(name, value);
+    // A browser seeds the `value` property from the attribute, and view code
+    // legitimately relies on that for pre-filled date and number inputs. Without
+    // this the shim reads them back as empty and the tests would be checking a
+    // behaviour the real page does not have.
+    if (name === 'value') this.value = value;
   }
 
   getAttribute(name: string): string | null {

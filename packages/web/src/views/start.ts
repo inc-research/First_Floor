@@ -7,6 +7,7 @@ import type { AppState } from '../state.ts';
 export interface StartHandlers {
   onDraft: (json: string) => void;
   onManual: () => void;
+  onMapCsv: () => void;
 }
 
 /**
@@ -43,6 +44,12 @@ export function startView(_state: AppState, h: StartHandlers): HTMLElement {
   });
 
   append(cards, [
+    card(
+      'A holdings file',
+      'Any CSV. Say which column is which — once — and keep that as a small file you can reuse next ' +
+      'quarter or pass to anyone using the same broker.',
+      h.onMapCsv,
+    ),
     card(
       'A structure document',
       'A JSON file describing the position — the format this page reads and writes. If you have ' +

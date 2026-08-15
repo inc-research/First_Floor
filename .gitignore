@@ -15,3 +15,6 @@ __pycache__/
 # Built web bundle and emitted declarations.
 packages/web/dist/
 packages/web/dist-types/
+
+# MCP build output.
+packages/mcp/dist/

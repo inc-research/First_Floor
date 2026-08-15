@@ -47,13 +47,13 @@ function stateFor(doc: unknown): AppState {
 const noop = () => {};
 
 describe('the start view', () => {
-  it('offers three input paths', () => {
-    const v = startView(initialState(), { onDraft: noop, onManual: noop }) as unknown as FakeElement;
-    assert.equal(v.findByClass('card').length, 3);
+  it('offers four input paths', () => {
+    const v = startView(initialState(), { onDraft: noop, onManual: noop, onMapCsv: noop }) as unknown as FakeElement;
+    assert.equal(v.findByClass('card').length, 4);
   });
 
   it('states the refusals on the front page, not buried', () => {
-    const v = startView(initialState(), { onDraft: noop, onManual: noop }) as unknown as FakeElement;
+    const v = startView(initialState(), { onDraft: noop, onManual: noop, onMapCsv: noop }) as unknown as FakeElement;
     const text = v.textContent;
     assert.match(text, /does not fetch data/i);
     assert.match(text, /does not rank funds/i);
@@ -65,8 +65,9 @@ describe('the start view', () => {
     const v = startView(initialState(), {
       onDraft: (json) => { handed = json; },
       onManual: noop,
+      onMapCsv: noop,
     }) as unknown as FakeElement;
-    v.findByClass('card')[2]!.click();
+    v.findByClass('card')[3]!.click();
     assert.ok(handed, 'the example path produced no draft');
     assert.equal(JSON.parse(handed!).schema_version, '0.2.0');
   });

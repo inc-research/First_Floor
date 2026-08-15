@@ -1,8 +1,17 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/copy" },
-    { "path": "./packages/web" }
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/copy"
+    },
+    {
+      "path": "./packages/web"
+    },
+    {
+      "path": "./packages/mcp"
+    }
   ]
 }

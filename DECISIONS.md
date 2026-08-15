@@ -256,6 +256,35 @@ non-specialist than any Greek (§7 of the brief).
 
 ---
 
+## Adapters and surfaces
+
+Settled 15 August 2026, during Phase 9.
+
+### D-38 · The adapter never invents an underlying level
+A holdings file records positions, not levels, dividend yields or the risk-free rate. The adapter
+produces a *draft* structure document and asks for the levels it cannot know, rather than seeding
+them from anything. Inventing them would be exactly the silent defaulting invariant 3 forbids, and
+the failure would be invisible: a plausible level produces a plausible report that is wrong
+throughout.
+
+*Reverses if:* never for levels. A future adapter reading a file that genuinely contains them would
+read them, which is not the same thing.
+
+### D-39 · A mapping is chosen by result, not guessed from column names
+The mapper tries every shipped mapping and keeps whichever reads the most rows and fails the fewest.
+Whether a mapping works is observable; a heuristic over header titles is not, and would be one more
+thing to maintain per issuer. A file that no shipped mapping reads falls through to manual entry
+rather than to an error — being unable to parse someone's export is ordinary, and should not be the
+end of the road.
+
+### D-40 · Active share is validated by properties, not by vectors — O-05 closed
+Closed in favour of D-14: the oracle is retired once the port passes, not extended. Active share is a
+conventional statistic with checkable algebra — zero against an identical composition, one against a
+disjoint one, bounded in [0,1], invariant to relabelling and to rescaling either side — and those
+hold for compositions nobody has written down, which a frozen number does not.
+
+---
+
 ## Open
 
 | # | Question | Blocking |
@@ -264,5 +293,4 @@ non-specialist than any Greek (§7 of the brief).
 | O-02 | Who reviews the disclaimer, and when does that start? | Launch, not build |
 | O-03 | Does the capture estimator's conditioning band need widening at 20k paths? | Phase 6 gate |
 | O-04 | Site hosting: GitHub Pages default, or a custom domain? | Launch |
-| O-05 | §9 active share and six of the eight §10 diagnostics have no oracle implementation and no vectors. Property tests, or extend the frozen oracle once? | Phase 7 |
 | O-06 | Should `subject`/`advertised` be stripped from a downloaded structure document by default, so a shared file carries no product claim? | Phase 8 |

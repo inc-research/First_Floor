@@ -1,0 +1,18 @@
+{
+  "schema_version": "0.2.0",
+  "name": "Long-form holdings with OCC identifiers",
+  "header_row": 4,
+  "account_column": "Account",
+  "option_name_format": "occ21",
+  "columns": {
+    "identifier": "Symbol",
+    "name": "Description",
+    "asset_class": "Asset Class",
+    "quantity": "Quantity",
+    "price": "Price",
+    "market_value": "Market Value",
+    "sector": "Sector"
+  },
+  "option_markers": ["option"],
+  "cash_markers": ["cash"]
+}

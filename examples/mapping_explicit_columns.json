@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.2.0",
+  "name": "A file that already breaks options into their own columns",
+  "option_name_format": "explicit_columns",
+  "columns": {
+    "identifier": "Underlying",
+    "asset_class": "Type",
+    "right": "Call/Put",
+    "strike": "Strike",
+    "expiry": "Expiration",
+    "position": "Side",
+    "quantity": "Contracts",
+    "multiplier": "Multiplier",
+    "price": "Mark",
+    "market_value": "Value"
+  },
+  "option_markers": ["option"],
+  "cash_markers": ["cash"]
+}

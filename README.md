@@ -47,11 +47,38 @@ you what your held asset's beta is.
 
 ```
 schemas/       the three JSON Schemas — the contract every surface shares
-examples/      synthetic structures and scenarios only
+examples/      synthetic structures, scenarios, a holdings CSV and column mappings
 vectors/       golden vectors emitted by the oracle
 reference/     the Python test oracle. Frozen. Not shipped, not maintained.
 packages/core/ TypeScript. Pure functions. No I/O, no network, no DOM.
+packages/copy/ the plain-English and technical copy decks
+packages/web/  the static page. Reads files in-browser; no backend.
+packages/mcp/  a local stdio MCP server. Runs on your machine; never hosted.
 ```
+
+## Using it
+
+The page is three files that work from a folder:
+
+```
+npm install
+npm run build -w @first-floor/web
+npm run serve -w @first-floor/web      # or just open packages/web/dist/index.html
+```
+
+Four ways in, all converging on one structure document you review before any number is computed: a
+holdings CSV with a column mapping you save and reuse, a structure document, six numbers from a fact
+sheet, or a worked example.
+
+The MCP server runs locally over stdio:
+
+```
+npm run build -w @first-floor/mcp
+npx first-floor-mcp
+```
+
+It exposes `report`, `sweep`, `validate_document`, `map_holdings_csv` and `summarise` — the same core
+the page uses, so the two cannot disagree.
 
 ## Verifying the arithmetic
 

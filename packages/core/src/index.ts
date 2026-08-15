@@ -152,6 +152,25 @@ export {
   type ResetCadence,
 } from './report.ts';
 
+// Phase 9 — the generic CSV adapter. One adapter plus a saved mapping, never
+// one adapter per issuer (D-17).
+export { parseCsv, parseNumber, type CsvOptions, type CsvTable } from './adapters/csv.ts';
+export {
+  parseOptionName,
+  type OptionNameFormat,
+  type ParsedOptionName,
+} from './adapters/optionNames.ts';
+export {
+  applyMapping,
+  synthesiseStructure,
+  type ColumnMapping,
+  type MappedFile,
+  type MappedRow,
+  type RowKind,
+  type SynthesisInput,
+  type SynthesisResult,
+} from './adapters/mapping.ts';
+
 // The blocker model behind invariant 3.
 export {
   BLOCKERS,
