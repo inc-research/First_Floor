@@ -130,6 +130,28 @@ export {
   type CaptureRealisation,
 } from './analytics/capture.ts';
 
+// Phase 7 — sleeve statistics and report assembly.
+export {
+  MAX_COMPOSITION_GAP_DAYS,
+  activeShare,
+  concentration,
+  type ActiveShare,
+  type ActiveShareResult,
+  type Concentration,
+} from './analytics/sleeve.ts';
+export {
+  buildReport,
+  figures,
+  type AdvertisedVsComputed,
+  type AssumptionLine,
+  type CaptureSection,
+  type Figure,
+  type MetricKey,
+  type Report,
+  type ReportOptions,
+  type ResetCadence,
+} from './report.ts';
+
 // The blocker model behind invariant 3.
 export {
   BLOCKERS,
