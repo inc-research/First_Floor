@@ -92,6 +92,30 @@ describe('the column mapper', () => {
     assert.ok(options.includes('FUND-B'));
   });
 
+  it('defaults the index to the larger-scaled root, not the first alphabetically', () => {
+    // A real defect found by reading the rendered page. Roots sort to
+    // ['PXY','REF'], so taking the first offered "PXY level today — the index
+    // this structure is collared against", and anyone who typed 774.85 there
+    // would have got a report that was wrong throughout and looked fine.
+    const v = openWithExample();
+    const refLevel = v.findByClass('field').find((f) => f.textContent.startsWith('REF level today'));
+    assert.ok(refLevel, 'no REF level field');
+    assert.match(refLevel!.textContent, /The index this structure is collared against/);
+
+    const ratio = v.findByClass('field').find((f) => f.textContent.startsWith('PXY size relative to'));
+    assert.ok(ratio, 'PXY should be the proxy, and asked for its ratio');
+    assert.match(ratio!.textContent, /A tenth-scale proxy is 0\.1/);
+  });
+
+  it('lets the user override the guessed index and keeps that choice', () => {
+    const v = openWithExample();
+    pickIndex(v, 'PXY');
+    assert.ok(
+      v.findByClass('field').some((f) => f.textContent.startsWith('REF size relative to PXY')),
+      'an explicit choice must stick',
+    );
+  });
+
   it('asks for the levels a holdings file does not record', () => {
     const v = openWithExample();
     assert.match(v.textContent, /PXY level today/);

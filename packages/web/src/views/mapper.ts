@@ -62,6 +62,7 @@ export function mapperView(h: MapperHandlers): HTMLElement {
   const levels: Record<string, number> = {};
   const ratios: Record<string, number> = {};
   let referenceId = '';
+  let referenceChosenByUser = false;
 
   const columnsPanel = el('div', {});
   const previewPanel = el('div', {});
@@ -141,7 +142,9 @@ export function mapperView(h: MapperHandlers): HTMLElement {
       mapped = null;
       return;
     }
-    if (!referenceId || !mapped.roots.includes(referenceId)) referenceId = mapped.roots[0] ?? '';
+    if (!referenceChosenByUser || !mapped.roots.includes(referenceId)) {
+      referenceId = guessReference(mapped, account);
+    }
     if (account !== null && !mapped.accounts.includes(account)) account = null;
   }
 
@@ -266,6 +269,7 @@ export function mapperView(h: MapperHandlers): HTMLElement {
             account ?? '',
             (v) => {
               account = v === '' ? null : v;
+              remap();
               refresh();
             },
           ),
@@ -293,6 +297,7 @@ export function mapperView(h: MapperHandlers): HTMLElement {
           el('label', {}, 'Which one is the index'),
           select(mapped.roots.map((r) => [r, r] as [string, string]), referenceId, (v) => {
             referenceId = v;
+            referenceChosenByUser = true;
             refresh();
           }),
           el('div', { class: 'hint' },
@@ -388,6 +393,42 @@ export function mapperView(h: MapperHandlers): HTMLElement {
   }
 
   return root;
+}
+
+/**
+ * Which root is most likely the index everything else is quoted against.
+ *
+ * The root carrying the largest strikes. A proxy exists to be a fraction of the
+ * index — a tenth-scale ETF has strikes a tenth the size — so the biggest
+ * strikes belong to the thing the others are measured in.
+ *
+ * Taking the first root alphabetically, which is what this did first, invites
+ * exactly the mistake the ratio field exists to prevent: a file listing PXY
+ * before REF would offer "PXY level today — the index this structure is
+ * collared against", and someone who typed 774.85 there would get a report that
+ * was wrong throughout and looked fine. A default that is usually right is
+ * worth more here than a default that is arbitrary, and the picker is directly
+ * above either way.
+ */
+function guessReference(file: MappedFile, account: string | null): string {
+  let best = file.roots[0] ?? '';
+  let bestStrike = -Infinity;
+  for (const root of file.roots) {
+    const strikes = file.rows
+      .filter((r) => r.option?.root === root && (account === null || r.account === account))
+      .map((r) => r.option!.strike);
+    if (strikes.length === 0) continue;
+    // The largest strike, not the typical one. A file mixing two accounts holds
+    // two structures on differently scaled underlyings, and a median over the
+    // lot is dominated by whichever account has more rows rather than by which
+    // underlying is the larger scale.
+    const largest = Math.max(...strikes);
+    if (largest > bestStrike) {
+      bestStrike = largest;
+      best = root;
+    }
+  }
+  return best;
 }
 
 function blankMapping(): ColumnMapping {

@@ -164,16 +164,37 @@ function anatomySection(doc: CollaredStructure): HTMLElement[] {
 
   const summary = [
     ['Dated', doc.as_of],
-    ['Index level', fmt(refLevel)],
     ['Held assets', `${((doc.held_asset.weight ?? 0) * 100).toFixed(1)}% of the fund`],
     ['Cash', `${((doc.capital.cash_weight ?? 0) * 100).toFixed(1)}%`],
     ['Fund size', doc.capital.net_assets.toLocaleString('en')],
     ['Contracts', String(doc.option_legs.length)],
   ];
 
+  // Every underlying, not only the reference. Proxy basis is the thing this
+  // page exists to surface, and a level quoted against the wrong scale is the
+  // defect the review step is here to catch — so it gets a row of its own
+  // rather than a footnote.
+  const underlyingRows = Object.entries(doc.underlyings).map(([id, u]) => [
+    id === doc.reference_id ? `${id} (the index)` : id,
+    fmt(u.level),
+    id === doc.reference_id
+      ? '—'
+      : u.ratio_to_reference === undefined
+        ? 'not stated'
+        : `${u.ratio_to_reference}× the index`,
+  ]);
+
   out.unshift(
     el('h3', {}, 'In summary'),
     table(['', ''], summary),
+    el('h3', {}, 'What the contracts are written on'),
+    table(['Underlying', 'Level today', 'Size relative to the index'], underlyingRows),
+    Object.values(doc.underlyings).some((u) => u.ratio_to_reference === undefined)
+      ? el('div', { class: 'blocked' },
+          el('p', { class: 'small' },
+            'One of these has no stated size relative to the index. Strike comparisons below assume ' +
+            'one-for-one, which puts a tenth-scale proxy ten times out.'))
+      : el('span', {}),
   );
 
   return out;
