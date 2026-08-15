@@ -1,0 +1,75 @@
+{
+  "schema_version": "0.2.0",
+  "as_of": "2026-08-14",
+  "label": "Synthetic Example C \u2014 defined-outcome buffer, typed by hand from a fact sheet",
+  "underlyings": {
+    "REF": {
+      "level": 109.61,
+      "level_source": "observed_close",
+      "ratio_to_reference": 1.0
+    }
+  },
+  "reference_id": "REF",
+  "held_asset": {
+    "kind": "none",
+    "weight": 0.0
+  },
+  "option_legs": [
+    {
+      "leg_id": "SYN",
+      "underlying_id": "REF",
+      "right": "call",
+      "position": "long",
+      "strike": 0.94,
+      "expiry": "2027-03-19",
+      "contracts": 16104,
+      "role": "synthetic_long"
+    },
+    {
+      "leg_id": "BUF_L",
+      "underlying_id": "REF",
+      "right": "put",
+      "position": "long",
+      "strike": 93.59,
+      "expiry": "2027-03-19",
+      "contracts": 16104,
+      "role": "buffer_long"
+    },
+    {
+      "leg_id": "BUF_S",
+      "underlying_id": "REF",
+      "right": "put",
+      "position": "short",
+      "strike": 79.55,
+      "expiry": "2027-03-19",
+      "contracts": 16104,
+      "role": "buffer_short"
+    },
+    {
+      "leg_id": "CAP",
+      "underlying_id": "REF",
+      "right": "call",
+      "position": "short",
+      "strike": 108.4,
+      "expiry": "2027-03-19",
+      "contracts": 16104,
+      "role": "cap"
+    }
+  ],
+  "capital": {
+    "net_assets": 164111128,
+    "units_outstanding": 1610400,
+    "expense_ratio": 0.0085
+  },
+  "provenance": {
+    "source": "fact_sheet",
+    "notes": "Everything above came from four strikes, one expiry, one level and a NAV. No holdings file involved."
+  },
+  "advertised": {
+    "protection_pct": 0.15,
+    "protection_kind": "buffer",
+    "cap_pct": 0.1582,
+    "outcome_period_end": "2027-03-19",
+    "source": "hypothetical fact sheet"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://first-floor.dev/schemas/0.2/reference_composition.schema.json",
+  "title": "Reference composition",
+  "description": "The reference index's constituent weights, supplied by the user. Optional; when absent the active-share section is omitted entirely rather than estimated (D-10). Index membership and weight differences are not knowable from a holdings file, and nothing here is hosted, bundled or updated.",
+  "type": "object",
+  "required": ["schema_version", "as_of", "source_note", "constituents"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["0.2.0"]
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Compared against the structure's as_of. A gap over 90 days blocks active share, with the gap stated, rather than joining quietly (spec section 10)."
+    },
+    "name": {
+      "type": "string",
+      "description": "Free text for the user's own benefit. Never used in computation."
+    },
+    "source_note": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Required, because one honesty requirement attaches to every composition file: a composition sourced from a tracking fund's published holdings is that fund's holdings, not the index. Saying so is not optional, so the field is not optional."
+    },
+    "constituents": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Names present on one side only are counted and reported, never dropped silently.",
+      "items": {
+        "type": "object",
+        "required": ["name", "weight"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Matched against held-asset constituent names. Name coverage is reported alongside active share."
+          },
+          "weight": { "type": "number", "minimum": 0 },
+          "sector": { "type": "string" }
+        }
+      }
+    }
+  }
+}

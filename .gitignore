@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+__pycache__/
+*.pyc
+
+# Per-machine tool settings. Shared settings belong in .claude/settings.json.
+.claude/settings.local.json
+
+# Holdings files are the user's own data and must never be committed.
+*.csv
+!examples/*.csv

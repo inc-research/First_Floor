@@ -1,0 +1,22 @@
+{
+  "name": "first-floor",
+  "version": "0.2.0",
+  "private": true,
+  "description": "A calculator for buffered and floored funds. Blind, local, bring your own position.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "tsc --build --force"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}

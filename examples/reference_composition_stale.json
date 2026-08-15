@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.2.0",
+  "as_of": "2026-01-05",
+  "name": "Synthetic reference composition, deliberately stale",
+  "source_note": "Identical weights to reference_composition_synthetic.json but dated 221 days before example A's as_of. Exists only to drive the staleness diagnostic in COMPUTATIONAL_SPEC.md section 10: a gap over 90 days blocks active share and states the gap, rather than joining quietly.",
+  "constituents": [
+    { "name": "NAME-001", "weight": 0.071, "sector": "Information Technology" },
+    { "name": "NAME-002", "weight": 0.064, "sector": "Information Technology" },
+    { "name": "NAME-003", "weight": 0.049, "sector": "Communication Services" },
+    { "name": "NAME-004", "weight": 0.038, "sector": "Consumer Discretionary" },
+    { "name": "NAME-005", "weight": 0.045, "sector": "Financials" },
+    { "name": "NAME-007", "weight": 0.033, "sector": "Health Care" },
+    { "name": "NAME-008", "weight": 0.7, "sector": "Various — further names collapsed for this example" }
+  ]
+}

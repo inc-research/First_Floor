@@ -1,0 +1,23 @@
+{
+  "name": "@first-floor/core",
+  "version": "0.2.0",
+  "description": "Pure functions for collared-structure analytics. No I/O, no network, no DOM.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "test": "node --test 'test/**/*.test.ts'"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

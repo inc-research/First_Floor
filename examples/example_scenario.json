@@ -1,0 +1,43 @@
+{
+  "schema_version": "0.2.0",
+  "vol_beta": 0.65,
+  "held_asset_response": {
+    "beta_down": 1.0,
+    "beta_up": 1.0
+  },
+  "decline": {
+    "total_move": -0.3,
+    "horizon_days": 365,
+    "include_call_overlay": false,
+    "replacement": {
+      "floor_strike_pct_of_spot": 0.9,
+      "floor_tenor_days": 365,
+      "floor_iv": 0.25
+    }
+  },
+  "capture": {
+    "horizon_days": 91,
+    "reference_move": 0.152,
+    "reference_vol": 0.16,
+    "paths": 20000,
+    "seed": 11,
+    "tenor_grid_days": [
+      14,
+      30,
+      91
+    ],
+    "delta_grid": [
+      0.3,
+      0.25,
+      0.2
+    ]
+  },
+  "sweep": {
+    "parameter": "beta_down",
+    "values": [
+      1.0,
+      1.1,
+      1.2
+    ]
+  }
+}

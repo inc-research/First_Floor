@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://first-floor.dev/schemas/0.2/collared_structure.schema.json",
+  "title": "Collared structure",
+  "description": "A normalized description of a collared equity structure as it stands on its as-of date. Describes today only: nothing forward-looking belongs here. Forward assumptions live in a scenario document (invariant 4, D-06). No field is required to identify a real product; `subject` and `advertised` are optional, user-asserted, and never enter a computation (D-02).",
+  "type": "object",
+  "required": ["schema_version", "as_of", "underlyings", "reference_id", "held_asset", "option_legs", "capital"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of this schema. Well-formedness only is checked here; compatibility is enforced by the reader so it can emit a useful message (invariant 5, D-21). Below 1.0 the MINOR component is the compatibility axis: a 0.2.x reader refuses 0.3.x.",
+      "examples": ["0.2.0"]
+    },
+    "as_of": {
+      "$ref": "#/$defs/date",
+      "description": "The date the position was true. Every report carries it in the header."
+    },
+    "label": {
+      "type": "string",
+      "description": "Free text for the user's own benefit. Never used in computation."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 4217 code. Reporting only; the engine is single-currency and does no conversion."
+    },
+    "reference_id": {
+      "type": "string",
+      "description": "Key into `underlyings` naming the index the structure is collared against. Every attachment and reference move is quoted against this underlying's level."
+    },
+    "underlyings": {
+      "type": "object",
+      "description": "Keyed dictionary; legs point at entries by key (D-07). Making this a dictionary rather than a field on each leg turns proxy-versus-reference basis into a declared fact rather than an accident.",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/underlying" }
+    },
+    "held_asset": {
+      "$ref": "#/$defs/held_asset",
+      "description": "Required. A structure with no held asset is encoded as `weight: 0` with `kind: \"none\"`, not by omitting this object."
+    },
+    "option_legs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/option_leg" }
+    },
+    "capital": {
+      "type": "object",
+      "required": ["net_assets"],
+      "additionalProperties": false,
+      "properties": {
+        "net_assets": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "NAV. Every notional in the report is divided by this."
+        },
+        "units_outstanding": { "type": "number", "exclusiveMinimum": 0 },
+        "cash_weight": {
+          "type": "number",
+          "default": 0,
+          "description": "Cash as a fraction of NAV. Enters the weights reconciliation identity."
+        },
+        "expense_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0,
+          "description": "Annual, as a fraction. Pro-rated in the gradual-decline path."
+        }
+      }
+    },
+    "market": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "risk_free_rate": {
+          "type": "number",
+          "default": 0.04,
+          "description": "Continuous rate used for discounting and for implied-vol inversion. Defaults to 0.04 when absent, matching the oracle."
+        },
+        "day_count": {
+          "type": "string",
+          "enum": ["act/365"],
+          "default": "act/365",
+          "description": "Time is act/365 from as_of to expiry. A leg expiring today has T = 0 and is worth its intrinsic value."
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["holdings_file", "fact_sheet", "hypothetical", "manual_entry"]
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "description": "What the user asserts this document describes. Optional, user-supplied, and never read by any computation. The engine is blind (D-02).",
+      "additionalProperties": false,
+      "properties": {
+        "ticker": { "type": "string" },
+        "issuer": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "advertised": {
+      "type": "object",
+      "description": "What a fact sheet claims, recorded so the report can set it beside the computed figure. A claim about the document's subject, not an input to arithmetic.",
+      "additionalProperties": false,
+      "properties": {
+        "protection_pct": { "type": "number", "minimum": 0 },
+        "protection_kind": { "type": "string", "enum": ["buffer", "floor", "none"] },
+        "cap_pct": { "type": "number" },
+        "outcome_period_end": { "$ref": "#/$defs/date" },
+        "source": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "underlying": {
+      "type": "object",
+      "required": ["level"],
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Spot level in this underlying's own units. Strikes on legs pointing here are quoted in the same units."
+        },
+        "level_source": {
+          "type": "string",
+          "enum": ["observed_close", "solved_from_options", "user_supplied"],
+          "description": "Where the level came from. `solved_from_options` is gated by a residual diagnostic (spec section 10): above 5 index points the report requires a user-supplied level instead."
+        },
+        "ratio_to_reference": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1,
+          "description": "Multiply a reference level by this to get this underlying's level. A tenth-scale proxy ETF is 0.1. Never compare a strike to the reference level without passing through it (spec section 0)."
+        },
+        "dividend_yield": {
+          "type": "number",
+          "default": 0,
+          "description": "Continuous yield q, used in Black-Scholes and in delta."
+        },
+        "exercise_style": { "type": "string", "enum": ["european", "american"] },
+        "settlement": { "type": "string", "enum": ["cash", "physical"] },
+        "tracking_error_bps_annual": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Reporting only. Surfaces proxy basis; enters no computation in v1."
+        }
+      }
+    },
+    "held_asset": {
+      "type": "object",
+      "required": ["kind", "weight"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["none", "basket", "reference_tracking_fund", "single_name"],
+          "description": "A hint that feeds classification alongside the constituent count. Architecture is derived, never trusted from this field alone."
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "description": "w_eq, the held asset as a fraction of NAV. Zero means there is no held asset, which blocks Lambda, concentration and active share (spec section 10)."
+        },
+        "dividend_yield": { "type": "number", "default": 0 },
+        "response": {
+          "$ref": "#/$defs/held_asset_response",
+          "description": "The held asset's response to the reference. Explicit object, never an implicit 1.0 (invariant 2, D-08). This is the assumption the headline result turns on."
+        },
+        "constituents": {
+          "type": "array",
+          "description": "Name, weight and sector only (D-11). Sufficient for concentration and a sector view; resist adding fields until a computation demands one.",
+          "items": {
+            "type": "object",
+            "required": ["name", "weight"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "weight": { "type": "number", "minimum": 0 },
+              "sector": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "held_asset_response": {
+      "type": "object",
+      "required": ["beta_down", "beta_up", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "beta_down": {
+          "type": "number",
+          "description": "Held-asset move per unit of reference move when the reference falls. The floor is flat if and only if this equals Lambda."
+        },
+        "beta_up": {
+          "type": "number",
+          "description": "The same when the reference rises. Above the cap the sign of the residual term flips, so a high-beta held asset adds to return in a rally."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["assumed", "user_supplied"],
+          "description": "Beta is an input, never an estimate (D-09). There is no `estimated` value here by design."
+        },
+        "idio_vol_annual": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Reporting only; enters no v1 computation."
+        }
+      }
+    },
+    "option_leg": {
+      "type": "object",
+      "required": ["leg_id", "underlying_id", "right", "position", "strike", "expiry", "contracts"],
+      "additionalProperties": false,
+      "properties": {
+        "leg_id": { "type": "string" },
+        "underlying_id": {
+          "type": "string",
+          "description": "Key into `underlyings`. The reader rejects a leg naming an underlying that is not present."
+        },
+        "right": { "type": "string", "enum": ["call", "put"] },
+        "position": {
+          "type": "string",
+          "enum": ["long", "short"],
+          "description": "Direction lives here and only here. Never a sign on `contracts` (spec section 0)."
+        },
+        "strike": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Quoted in its own underlying's units, not the reference's."
+        },
+        "expiry": { "$ref": "#/$defs/date" },
+        "contracts": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Always positive. A leg's units is contracts times multiplier."
+        },
+        "multiplier": { "type": "number", "exclusiveMinimum": 0, "default": 100 },
+        "mark_per_unit": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Price per unit. Absent on any leg, the weights reconciliation is not computable and returns null with a stated blocker rather than 0.0 (invariant 3, D-16)."
+        },
+        "implied_vol": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5,
+          "description": "Used directly when present. Otherwise inverted from `mark_per_unit` by bisection; where neither is present the scenario's fallback_iv is used and the leg is recorded as modelled rather than marked."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["floor", "cap", "synthetic_long", "buffer_long", "buffer_short", "other"],
+          "description": "A user or adapter hint for display. Classification is derived from the legs themselves and never trusts this field (spec section 2)."
+        }
+      }
+    }
+  }
+}

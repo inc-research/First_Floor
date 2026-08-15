@@ -1,0 +1,147 @@
+{
+  "as_of": "2026-08-14",
+  "classification": {
+    "architecture": "basket",
+    "protection_kind": "plain_put",
+    "basis_live": true,
+    "protection_continues_below_lowest_strike": true,
+    "floor_tranches": 4,
+    "cap_tranches": 3,
+    "distinct_floor_expiries": 4,
+    "distinct_cap_expiries": 3,
+    "mean_floor_remaining_days": 183.75,
+    "mean_cap_remaining_days": 9.666666666666668,
+    "reset_asymmetry_ratio": 19.00862068965517
+  },
+  "exposure": {
+    "held_asset_weight": 0.981,
+    "cash_weight": 0.016,
+    "put_spot_notional": 0.980427864656852,
+    "insured_value": 0.7810145182415202,
+    "short_call_spot_notional": 0.9779176250619004,
+    "gross_option_notional": 1.9583454897187524,
+    "option_book_value": 0.0030035983209378316,
+    "weights_reconcile": 1.0000035983209379,
+    "weights_reconcile_blocked_by": null,
+    "delta_cancellation_ratio": 0.9994167835441917,
+    "average_attachment": -0.20339420533006392,
+    "lowest_attachment": -0.24630573659417954,
+    "net_delta": 0.5104890449266977
+  },
+  "implied_vols": {
+    "P1": 0.2806395675162684,
+    "P2": 0.34523777532899025,
+    "P3": 0.27501607898824143,
+    "P4": 0.22630056351528283,
+    "C1": 0.1777450759057692,
+    "C2": 0.121065199641366,
+    "C3": 0.10472668059570636
+  },
+  "terminal_floor": {
+    "value": -0.2029568749913223,
+    "at_reference_move": -0.246,
+    "flat_below": true,
+    "flat_tolerance": 0.0005
+  },
+  "terminal_by_beta": {
+    "1.00": {
+      "-0.20": -0.18271297015360544,
+      "-0.40": -0.20264220055259097,
+      "-0.60": -0.2027566276212206
+    },
+    "1.10": {
+      "-0.20": -0.20233297015360552,
+      "-0.40": -0.24188220055259102,
+      "-0.60": -0.26161662762122073
+    },
+    "1.20": {
+      "-0.20": -0.2219529701536055,
+      "-0.40": -0.28112220055259096,
+      "-0.60": -0.32047662762122064
+    }
+  },
+  "mtm_by_vol_beta": {
+    "0.00": {
+      "-0.10": -0.07926999169129212,
+      "-0.20": -0.14870905778232457,
+      "-0.30": -0.19239382630794877
+    },
+    "0.35": {
+      "-0.10": -0.07327914396796631,
+      "-0.20": -0.13461875416009816,
+      "-0.30": -0.17509963830892117
+    },
+    "0.65": {
+      "-0.10": -0.06792892451040589,
+      "-0.20": -0.12246247918229203,
+      "-0.30": -0.15930169060695976
+    },
+    "1.00": {
+      "-0.10": -0.06149985543235037,
+      "-0.20": -0.10825493569231659,
+      "-0.30": -0.14038843834127135
+    }
+  },
+  "concentration": {
+    "names": 6,
+    "hhi": 0.526284,
+    "effective_n": 1.9001147669319227,
+    "top_weight": 0.713,
+    "weights_sum_raw": 1.0
+  },
+  "gradual_decline": {
+    "outcome": -0.22305812199558772,
+    "include_call_overlay": false,
+    "note": "monotone path; call overlay excluded"
+  },
+  "capture_grid": {
+    "14d_0.30": {
+      "capture": 0.6435453163832717,
+      "conditioned_paths": 3355
+    },
+    "14d_0.25": {
+      "capture": 0.6973342457840054,
+      "conditioned_paths": 3355
+    },
+    "14d_0.20": {
+      "capture": 0.7528023545544058,
+      "conditioned_paths": 3355
+    },
+    "30d_0.30": {
+      "capture": 0.6056604392136099,
+      "conditioned_paths": 3480
+    },
+    "30d_0.25": {
+      "capture": 0.6643156492139838,
+      "conditioned_paths": 3480
+    },
+    "30d_0.20": {
+      "capture": 0.7263599167597053,
+      "conditioned_paths": 3480
+    },
+    "91d_0.30": {
+      "capture": 0.46441680628057264,
+      "conditioned_paths": 3495
+    },
+    "91d_0.25": {
+      "capture": 0.5261079751225618,
+      "conditioned_paths": 3495
+    },
+    "91d_0.20": {
+      "capture": 0.6000691497891266,
+      "conditioned_paths": 3495
+    }
+  },
+  "capture_params": {
+    "horizon_days": 91,
+    "reference_move": 0.152,
+    "reference_vol": 0.16,
+    "paths": 20000,
+    "seed": 11
+  },
+  "scenario": {
+    "vol_beta": 0.65,
+    "beta_down": 1.0,
+    "beta_up": 1.0
+  }
+}

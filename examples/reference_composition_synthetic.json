@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.2.0",
+  "as_of": "2026-08-14",
+  "name": "Synthetic reference composition for example A",
+  "source_note": "Invented figures. Not the composition of any real index. Constructed to exercise active share in both directions: NAME-006 appears in the held asset but not here, and NAME-007 and NAME-008 appear here but not in the held asset. Both one-sided cases are counted and reported, never dropped silently.",
+  "constituents": [
+    { "name": "NAME-001", "weight": 0.071, "sector": "Information Technology" },
+    { "name": "NAME-002", "weight": 0.064, "sector": "Information Technology" },
+    { "name": "NAME-003", "weight": 0.049, "sector": "Communication Services" },
+    { "name": "NAME-004", "weight": 0.038, "sector": "Consumer Discretionary" },
+    { "name": "NAME-005", "weight": 0.045, "sector": "Financials" },
+    { "name": "NAME-007", "weight": 0.033, "sector": "Health Care" },
+    { "name": "NAME-008", "weight": 0.7, "sector": "Various — further names collapsed for this example" }
+  ]
+}

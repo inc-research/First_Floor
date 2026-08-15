@@ -1,0 +1,88 @@
+{
+  "as_of": "2026-08-14",
+  "classification": {
+    "architecture": "synthetic",
+    "protection_kind": "put_spread",
+    "basis_live": false,
+    "protection_continues_below_lowest_strike": false,
+    "floor_tranches": 1,
+    "cap_tranches": 1,
+    "distinct_floor_expiries": 1,
+    "distinct_cap_expiries": 1,
+    "mean_floor_remaining_days": 217.0,
+    "mean_cap_remaining_days": 217.0,
+    "reset_asymmetry_ratio": 1.0
+  },
+  "exposure": {
+    "held_asset_weight": 0.0,
+    "cash_weight": 0.0,
+    "put_spot_notional": 1.0755879028508049,
+    "insured_value": 0.9183858391370023,
+    "short_call_spot_notional": 1.0755879028508049,
+    "gross_option_notional": 4.302351611403219,
+    "option_book_value": null,
+    "weights_reconcile": null,
+    "weights_reconcile_blocked_by": "one or more legs have no mark",
+    "delta_cancellation_ratio": null,
+    "average_attachment": -0.14615454794270588,
+    "lowest_attachment": -0.14615454794270588,
+    "net_delta": 0.30837693048286446
+  },
+  "implied_vols": {
+    "SYN": null,
+    "BUF_L": null,
+    "BUF_S": null,
+    "CAP": null
+  },
+  "terminal_floor": {
+    "value": -0.8176721008218284,
+    "at_reference_move": -0.95,
+    "flat_below": false,
+    "flat_tolerance": 0.0005
+  },
+  "terminal_by_beta": {
+    "1.00": {
+      "-0.20": -0.09083825199227191,
+      "-0.40": -0.22609875425388581,
+      "-0.60": -0.44121633482404665
+    },
+    "1.10": {
+      "-0.20": -0.09083825199227191,
+      "-0.40": -0.22609875425388581,
+      "-0.60": -0.44121633482404665
+    },
+    "1.20": {
+      "-0.20": -0.09083825199227191,
+      "-0.40": -0.22609875425388581,
+      "-0.60": -0.44121633482404665
+    }
+  },
+  "mtm_by_vol_beta": {
+    "0.00": {
+      "-0.10": -0.048500366686847984,
+      "-0.20": -0.09762854501954155,
+      "-0.30": -0.15639672851037778
+    },
+    "0.35": {
+      "-0.10": -0.052671233513812754,
+      "-0.20": -0.10483899724397205,
+      "-0.30": -0.17050316881214955
+    },
+    "0.65": {
+      "-0.10": -0.05702921975403297,
+      "-0.20": -0.1143324955245143,
+      "-0.30": -0.18488813527355175
+    },
+    "1.00": {
+      "-0.10": -0.06286688917096983,
+      "-0.20": -0.1276182254357623,
+      "-0.30": -0.2041576821186798
+    }
+  },
+  "concentration": null,
+  "scenario": {
+    "vol_beta": 0.65,
+    "beta_down": 1.0,
+    "beta_up": 1.0
+  }
+}
