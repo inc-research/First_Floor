@@ -272,8 +272,17 @@ export function synthesiseStructure(file: MappedFile, input: SynthesisInput): Sy
   const netAssets = input.net_assets ?? equityValue + cashValue + optionValue;
   if (input.net_assets === undefined) {
     notes.push(
-      'Fund size was taken as the sum of the values in the file. If the file lists only part of ' +
-      'the portfolio, set it by hand — every notional in the report is divided by this.',
+      netAssets > 0
+        ? 'Fund size was taken as the sum of the values in the file. If the file lists only part of ' +
+          'the portfolio, set it by hand — every notional in the report is divided by this.'
+        : // A file quoting price as a percentage of NAV, or listing contracts
+          // without marks, sums to nothing. Left at zero it produces a document
+          // that fails validation on `net_assets must be > 0` — a message about
+          // a schema constraint for a problem about a missing number.
+          'Fund size could not be worked out from this file: the values in it sum to nothing. This ' +
+          'happens when prices are quoted as a percentage of net assets rather than in currency, or ' +
+          'when contracts carry no marks. It has to be supplied — every notional in the report is ' +
+          'divided by it.',
     );
   }
 
@@ -320,6 +329,17 @@ export function synthesiseStructure(file: MappedFile, input: SynthesisInput): Sy
       weight: netAssets > 0 ? r.holding!.marketValue / netAssets : 0,
       ...(r.holding!.sector ? { sector: r.holding!.sector } : {}),
     }));
+
+  if (legs.length === 0) {
+    notes.push(
+      input.account
+        ? `No option positions were found in ${input.account}. A structure with no contracts is not ` +
+          'a collared structure, and this document will not validate. Choose an account that holds ' +
+          'the contracts.'
+        : 'No option positions were found. Check that the identifier column is the one the contracts ' +
+          'are described in — nothing downstream can find them otherwise.',
+    );
+  }
 
   const unreadable = rows.filter((r) => r.kind === 'unreadable');
   if (unreadable.length > 0) {

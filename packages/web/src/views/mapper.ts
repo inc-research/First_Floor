@@ -263,7 +263,23 @@ export function mapperView(h: MapperHandlers): HTMLElement {
     // Only the roots the chosen account actually uses. A fund complex's export
     // carries dozens across dozens of structures, and demanding a level for
     // every one of them buries the handful that matter.
-    const activeRoots = rootsFor(mapped, account);
+    const file = mapped;
+    const activeRoots = rootsFor(file, account);
+
+    // What the values in this account add up to. Zero means the file cannot
+    // supply a fund size — prices quoted as a percentage of net assets, or
+    // contracts with no marks — and it has to be typed like the levels are.
+    const derivedNav = file.rows
+      .filter((r) => account === null || r.account === account)
+      .reduce((total, r) => {
+        if (r.holding) return total + r.holding.marketValue;
+        if (r.cash) return total + r.cash.marketValue;
+        if (r.option) {
+          const sign = r.option.position === 'long' ? 1 : -1;
+          return total + sign * r.option.contracts * r.option.multiplier * (r.option.markPerUnit ?? 0);
+        }
+        return total;
+      }, 0);
 
     // --- account picker -----------------------------------------------------
     if (mapped.accounts.length > 1) {
@@ -271,7 +287,13 @@ export function mapperView(h: MapperHandlers): HTMLElement {
         el('h3', {}, 'Which account'),
         el('div', { class: 'field' },
           select(
-            [['', '— all of them together —'], ...mapped.accounts.map((a) => [a, a] as [string, string])],
+            [
+              ['', `— all of them together (${describe(file, null)}) —`],
+              // Labelled with what each one holds, so an account with no
+              // contracts in it is visible before it is chosen rather than
+              // after it produces an empty document.
+              ...file.accounts.map((a) => [a, `${a} — ${describe(file, a)}`] as [string, string]),
+            ],
             account ?? '',
             (v) => {
               account = v === '' ? null : v;
@@ -280,9 +302,35 @@ export function mapperView(h: MapperHandlers): HTMLElement {
             },
           ),
           el('div', { class: 'hint' },
-            'This file holds more than one account. Mixing them would describe a portfolio nobody owns.'),
+            'This file holds more than one account. Mixing them would describe a portfolio nobody owns. ' +
+            'Only accounts holding contracts can produce a report.'),
         ),
       ]);
+    }
+
+    // Nothing to build from. This happens when the chosen account holds shares
+    // and cash but no contracts — an ordinary state for a fund complex's export
+    // where the options sit under a different label from the holdings. Without
+    // this guard the levels step renders nothing, the "still need a level"
+    // check passes vacuously because there is nothing to check, and Build emits
+    // a document with no legs and no underlyings that fails validation two
+    // screens later with a message about JSON.
+    if (activeRoots.length === 0) {
+      append(resultPanel, [
+        el('div', { class: 'blocked' },
+          el('strong', {}, account === null
+            ? 'No option positions were found anywhere in this file'
+            : `No option positions in ${account}`),
+          el('p', { class: 'small' },
+            account === null
+              ? 'The rows read as shares and cash only. Check the identifier and asset-class columns ' +
+                'above — if the contracts are described in a column this mapping is not reading, ' +
+                'nothing downstream can find them.'
+              : `${account} holds shares and cash but no contracts. Pick an account that holds the ` +
+                'options, or read all of them together, then split the file if it covers several funds.'),
+        ),
+      ]);
+      return;
     }
 
     // --- levels -------------------------------------------------------------
@@ -345,6 +393,25 @@ export function mapperView(h: MapperHandlers): HTMLElement {
       ]);
     }
 
+    const navInput = el('input', {
+      type: 'number',
+      step: 'any',
+      value: derivedNav > 0 ? String(Number(derivedNav.toFixed(2))) : '',
+    }) as HTMLInputElement;
+    append(resultPanel, [
+      el('div', { class: 'field' },
+        el('label', {}, 'Fund size'),
+        navInput,
+        el('div', { class: 'hint' },
+          derivedNav > 0
+            ? 'Added up from the values in this file. Override it if the file lists only part of the ' +
+              'portfolio — every notional in the report is divided by this.'
+            : 'The values in this file sum to nothing, which happens when prices are quoted as a ' +
+              'percentage of net assets rather than in currency, or when contracts carry no marks. ' +
+              'It has to be typed: every notional in the report is divided by it.'),
+      ),
+    ]);
+
     const asOf = el('input', { type: 'date', value: new Date().toISOString().slice(0, 10) }) as HTMLInputElement;
     append(resultPanel, [
       el('div', { class: 'field' },
@@ -363,6 +430,13 @@ export function mapperView(h: MapperHandlers): HTMLElement {
         el('button', {
           class: 'primary',
           onclick: () => {
+            const nav = Number(navInput.value);
+            if (!Number.isFinite(nav) || nav <= 0) {
+              problem.textContent =
+                'Fund size has to be a positive number. Every notional in the report is divided by ' +
+                'it, so there is no sensible default and nothing is assumed.';
+              return;
+            }
             const missing = activeRoots.filter((r) => levels[r] === undefined);
             if (missing.length > 0) {
               problem.textContent =
@@ -373,8 +447,9 @@ export function mapperView(h: MapperHandlers): HTMLElement {
               return;
             }
             problem.textContent = '';
-            const built = synthesiseStructure(mapped!, {
+            const built = synthesiseStructure(file, {
               as_of: asOf.value,
+              net_assets: nav,
               reference_id: referenceId,
               levels,
               ratios: { ...ratios, [referenceId]: 1 },
@@ -441,6 +516,17 @@ function guessReference(file: MappedFile, account: string | null): string {
     }
   }
   return best;
+}
+
+/** What one account holds, for the picker's labels. */
+function describe(file: MappedFile, account: string | null): string {
+  const rows = file.rows.filter((r) => account === null || r.account === account);
+  const options = rows.filter((r) => r.option).length;
+  const holdings = rows.filter((r) => r.holding).length;
+  const parts: string[] = [];
+  parts.push(options === 0 ? 'no contracts' : `${options} contract${options === 1 ? '' : 's'}`);
+  if (holdings > 0) parts.push(`${holdings} holding${holdings === 1 ? '' : 's'}`);
+  return parts.join(', ');
 }
 
 function blankMapping(): ColumnMapping {

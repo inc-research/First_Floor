@@ -166,11 +166,23 @@ describe('the column mapper', () => {
     assert.ok(!v.textContent.includes('Which one is the index'), 'one root, nothing to pick');
 
     setNumber(v, 'REF level today', '109.61');
+
+    // FUND-B's contracts carry no marks and it holds no shares or cash, so the
+    // file cannot supply a fund size and the build is refused until one is
+    // given. Previously this produced net_assets: 0 and a schema error two
+    // screens later.
+    v.findAll('button').find((b) => b.textContent.includes('Build the structure'))!.click();
+    assert.equal(handed, null, 'a fund size of nothing must not build');
+    assert.match(v.textContent, /Fund size has to be a positive number/);
+
+    setNumber(v, 'Fund size', '164111128');
     v.findAll('button').find((b) => b.textContent.includes('Build the structure'))!.click();
 
     const doc = JSON.parse(handed!);
     assert.equal(doc.option_legs.length, 4, 'FUND-B holds four contracts');
     assert.equal(doc.held_asset.weight, 0);
+    assert.equal(doc.capital.net_assets, 164111128);
+    assert.deepEqual(Object.keys(doc.underlyings), ['REF'], 'PXY belongs to the other account');
   });
 
   it('lets the mapping be saved for next time', () => {

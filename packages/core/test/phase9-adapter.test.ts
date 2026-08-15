@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import { parseCsv, parseNumber } from '../src/adapters/csv.ts';
 import { parseOptionName } from '../src/adapters/optionNames.ts';
-import { applyMapping, synthesiseStructure, type ColumnMapping } from '../src/adapters/mapping.ts';
+import { applyMapping, rootsFor, synthesiseStructure, type ColumnMapping } from '../src/adapters/mapping.ts';
 import { validateStructure } from '../src/schema/validate.ts';
 import { prepareStructure } from '../src/model/structure.ts';
 import { buildReport, figures } from '../src/report.ts';
@@ -192,6 +192,7 @@ describe('synthesising a structure document', () => {
       levels: { REF: 109.61 },
       ratios: { REF: 1 },
       account: 'FUND-B',
+      net_assets: 164_111_128,
     });
     assert.equal(b.document.option_legs.length, 4);
     assert.equal(b.document.held_asset.weight, 0);
@@ -262,5 +263,79 @@ describe('property: round-trip stability', () => {
     const text = JSON.stringify(original);
     assert.deepEqual(JSON.parse(text), original);
     assert.equal(JSON.stringify(JSON.parse(text)), text);
+  });
+});
+
+describe('an account holding no contracts', () => {
+  // Reported from a real file. A fund complex's export can label shares and
+  // cash under an account that holds no options, and the result was a document
+  // with no legs and no underlyings that failed validation two screens later
+  // with "/option_legs must NOT have fewer than 1 items" — a message about JSON
+  // for a problem about which account was chosen.
+  const equitiesOnly = [
+    'Account,Symbol,Description,Asset Class,Quantity,Price,Market Value,Sector',
+    'SLEEVE,NAME-001,Constituent One,Equity,1000,10.00,10000.00,Tech',
+    'SLEEVE,CASH,Cash and equivalents,Cash,,,500.00,',
+  ].join('\n');
+
+  const mapping: ColumnMapping = { ...OCC_MAPPING, header_row: 0 };
+
+  it('says so, rather than producing a document that fails validation later', () => {
+    const mapped = applyMapping(equitiesOnly, mapping);
+    assert.equal(mapped.counts.option, 0);
+
+    const built = synthesiseStructure(mapped, {
+      as_of: '2026-08-14',
+      reference_id: 'REF',
+      levels: {},
+      account: 'SLEEVE',
+    });
+    assert.equal(built.document.option_legs.length, 0);
+    assert.ok(
+      built.notes.some((n) => /No option positions were found in SLEEVE/.test(n)),
+      'the reason must be stated at the point it is known',
+    );
+
+    // And the document is still honestly invalid, which is the right outcome —
+    // a structure with no contracts is not a collared structure.
+    assert.equal(validateStructure(built.document).ok, false);
+  });
+
+  it('says when the fund size cannot be worked out, rather than emitting a zero', () => {
+    // FUND-B's contracts carry no marks and it holds no shares or cash, so the
+    // values sum to nothing. Left at zero the document fails validation on
+    // "net_assets must be > 0" -- a schema constraint standing in for a missing
+    // number. The same happens to any file quoting price as a percentage of NAV.
+    const mapped = applyMapping(CSV, OCC_MAPPING);
+    const built = synthesiseStructure(mapped, {
+      as_of: '2026-08-14',
+      reference_id: 'REF',
+      levels: { REF: 109.61 },
+      account: 'FUND-B',
+    });
+    assert.equal(built.document.capital.net_assets, 0);
+    assert.ok(built.notes.some((n) => /Fund size could not be worked out/.test(n)));
+    assert.match(built.notes.join(' '), /percentage of net assets/);
+  });
+
+  it('scopes roots to the chosen account, so one fund does not ask for another\'s levels', () => {
+    const mapped = applyMapping(CSV, OCC_MAPPING);
+    assert.deepEqual(rootsFor(mapped, null), ['PXY', 'REF']);
+    assert.deepEqual(rootsFor(mapped, 'FUND-B'), ['REF'], 'FUND-B holds nothing on PXY');
+    assert.deepEqual(rootsFor(mapped, 'NOT-AN-ACCOUNT'), []);
+  });
+
+  it('emits underlyings only for the roots the chosen account uses', () => {
+    const mapped = applyMapping(CSV, OCC_MAPPING);
+    const built = synthesiseStructure(mapped, {
+      as_of: '2026-08-14',
+      reference_id: 'REF',
+      levels: { REF: 109.61, PXY: 774.85 },
+      ratios: { REF: 1, PXY: 0.1 },
+      account: 'FUND-B',
+      net_assets: 164_111_128,
+    });
+    assert.deepEqual(Object.keys(built.document.underlyings), ['REF']);
+    assert.ok(validateStructure(built.document).ok);
   });
 });
