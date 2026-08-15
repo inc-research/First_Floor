@@ -562,6 +562,7 @@ spec, not changes to the model. The two exceptions are noted.
 | E-06 | §6 | Stated that mark-to-market never consults `beta_down` and is a β = 1.0 figure by construction, and that the report must label it as such rather than printing a beta it did not use. |
 | E-07 | §7 | Stated that replacement puts are priced at `q = 0`. |
 | E-08 | §11 | Amended the capture gate from "exactly" to 1e-12 relative, on measured evidence, with the uniform stream still held to exactness. **The model is unchanged**; the gate was unmeetable as written. |
+| E-09 | §4 | "A tolerance of 1e-6 declares nothing flat" is not what happens. On example A the residual slope is ~5.7e-4 per unit of reference move, which over one grid step of 5e-4 is only ~2.9e-7, so adjacent points near the bottom do fall inside 1e-6 and the scan still reports `flat_below`. What it gets wrong is *where*: the attachment migrates to −94.85%, saying the floor binds at the scan edge when it binds at −24.6%. The rule is unchanged — 5bp is still correct — but the symptom to recognise is a nonsense attachment, not a false flatness verdict. |
 
 One discrepancy is recorded but **not** corrected here, because it is a gap rather than an error:
 §9's active share and name coverage, and six of the eight §10 diagnostics, have no implementation in

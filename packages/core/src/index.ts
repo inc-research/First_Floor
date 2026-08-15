@@ -83,6 +83,53 @@ export {
 } from './analytics/classify.ts';
 export { exposure, type Exposure, type ExposureResult } from './analytics/exposure.ts';
 
+// Phase 3 — payoff geometry, where the headline result lives.
+export {
+  FLATNESS_TOLERANCE,
+  FLOOR_SCAN_LO,
+  FLOOR_SCAN_STEPS,
+  residualSlopeBelowLadder,
+  terminalByBeta,
+  terminalFloor,
+  terminalValue,
+  type GeometryAssumptions,
+  type TerminalFloor,
+} from './analytics/geometry.ts';
+
+// Phase 4 — mark-to-market and the sweep surface both renderers share.
+export { MIN_SHOCKED_VOL, mtmByVolBeta, mtmValue } from './analytics/mark.ts';
+export {
+  DEFAULT_REFERENCE_MOVE,
+  sweep,
+  sweepFromScenario,
+  type SweepAssumptions,
+  type SweepOptions,
+  type SweepParameter,
+  type SweepPoint,
+  type SweepResult,
+} from './sweep.ts';
+
+// Phase 5 — the gradual decline.
+export {
+  DEFAULT_REPLACEMENT,
+  gradualDecline,
+  gradualDeclineFromScenario,
+  type GradualDecline,
+  type ReplacementPolicy,
+} from './analytics/paths.ts';
+
+// Phase 6 — upside capture.
+export {
+  MIN_CONDITIONED_PATHS,
+  bankersRound,
+  capture,
+  captureGrid,
+  captureRealisation,
+  type CaptureCell,
+  type CaptureParams,
+  type CaptureRealisation,
+} from './analytics/capture.ts';
+
 // The blocker model behind invariant 3.
 export {
   BLOCKERS,

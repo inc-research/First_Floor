@@ -14,85 +14,14 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
-import { prepareStructure } from '../src/model/structure.ts';
 import { classify } from '../src/analytics/classify.ts';
 import { exposure } from '../src/analytics/exposure.ts';
-import { validateScenario, validateStructure } from '../src/schema/validate.ts';
-import type { CollaredStructure, Scenario } from '../src/schema/types.ts';
-
-const ROOT = new URL('../../../', import.meta.url);
-const read = (p: string) => JSON.parse(readFileSync(fileURLToPath(new URL(p, ROOT)), 'utf8'));
-
-const TOL = 1e-9;
-
-interface Case {
-  name: string;
-  structure: string;
-  scenario: string;
-  vector: string;
-}
-
-const CASES: Case[] = [
-  {
-    name: 'example A — laddered floor, basket held asset, proxy-ETF puts',
-    structure: 'examples/example_a_laddered_floor.json',
-    scenario: 'examples/example_scenario.json',
-    vector: 'vectors/example_a.json',
-  },
-  {
-    name: 'example C — defined-outcome buffer, hand typed, no marks',
-    structure: 'examples/example_c_minimal_hand_typed.json',
-    scenario: 'examples/scenario_minimal.json',
-    vector: 'vectors/example_c.json',
-  },
-];
-
-function load(c: Case) {
-  const sv = validateStructure(read(c.structure));
-  assert.ok(sv.ok, `${c.structure} failed validation`);
-  const cv = validateScenario(read(c.scenario));
-  assert.ok(cv.ok, `${c.scenario} failed validation`);
-  return {
-    prepared: prepareStructure(sv.document as CollaredStructure, cv.document as Scenario),
-    vector: read(c.vector) as Record<string, Record<string, unknown>>,
-  };
-}
-
-/** Compare a computed block against its vector, field by field, at `tol`. */
-function compareBlock(
-  actual: Record<string, unknown>,
-  expected: Record<string, unknown>,
-  tol: number,
-  label: string,
-): void {
-  assert.deepEqual(
-    Object.keys(actual).sort(),
-    Object.keys(expected).sort(),
-    `${label}: field set differs from the vector`,
-  );
-  for (const key of Object.keys(expected)) {
-    const e = expected[key];
-    const a = actual[key];
-    if (typeof e === 'number' && typeof a === 'number') {
-      const diff = Math.abs(a - e);
-      const scale = Math.max(1, Math.abs(e));
-      assert.ok(
-        diff <= tol * scale,
-        `${label}.${key}: got ${a}, expected ${e} (diff ${diff.toExponential(3)})`,
-      );
-    } else {
-      assert.deepEqual(a, e, `${label}.${key}`);
-    }
-  }
-}
+import { CASES, compareBlock, loadCase, TOL, type Case } from './helpers.ts';
 
 for (const c of CASES) {
   describe(c.name, () => {
     it('reproduces the classification block to 1e-9', () => {
-      const { prepared, vector } = load(c);
+      const { prepared, vector } = loadCase(c);
       compareBlock(
         classify(prepared).values as unknown as Record<string, unknown>,
         vector['classification'] as Record<string, unknown>,
@@ -102,7 +31,7 @@ for (const c of CASES) {
     });
 
     it('reproduces the exposure block to 1e-9', () => {
-      const { prepared, vector } = load(c);
+      const { prepared, vector } = loadCase(c);
       compareBlock(
         exposure(prepared).values as unknown as Record<string, unknown>,
         vector['exposure'] as Record<string, unknown>,
@@ -112,7 +41,7 @@ for (const c of CASES) {
     });
 
     it('reproduces every implied volatility to 1e-9', () => {
-      const { prepared, vector } = load(c);
+      const { prepared, vector } = loadCase(c);
       const expected = vector['implied_vols'] as Record<string, number | null>;
       for (const leg of prepared.legs) {
         const e = expected[leg.id];
@@ -135,7 +64,7 @@ for (const c of CASES) {
 
 describe('example A — the arithmetic that does not touch erfc', () => {
   it('is bit-identical to the vector, not merely within tolerance', () => {
-    const { prepared, vector } = load(CASES[0] as Case);
+    const { prepared, vector } = loadCase(CASES[0] as Case);
     const e = vector['exposure'] as Record<string, number>;
     const a = exposure(prepared).values;
     // Every one of these is a sum of products divided by NAV. Exact summation
@@ -153,7 +82,7 @@ describe('example A — the arithmetic that does not touch erfc', () => {
   });
 
   it('agrees on the reset asymmetry that drives path behaviour', () => {
-    const { prepared, vector } = load(CASES[0] as Case);
+    const { prepared, vector } = loadCase(CASES[0] as Case);
     const cls = classify(prepared).values;
     assert.equal(cls.mean_floor_remaining_days, 183.75);
     assert.equal(cls.reset_asymmetry_ratio, (vector['classification'] as Record<string, number>)['reset_asymmetry_ratio']);
@@ -164,7 +93,7 @@ describe('example C — the paths example A does not exercise', () => {
   it('returns null with a stated blocker for the weights identity, never 0.0', () => {
     // This is the defect COMPUTATIONAL_SPEC.md section 11 says this example
     // exists to catch, and it was a real one in the oracle's first draft.
-    const { prepared } = load(CASES[1] as Case);
+    const { prepared } = loadCase(CASES[1] as Case);
     const { values, blockers } = exposure(prepared);
     assert.equal(values.option_book_value, null);
     assert.equal(values.weights_reconcile, null);
@@ -176,7 +105,7 @@ describe('example C — the paths example A does not exercise', () => {
   });
 
   it('blocks Lambda because there is no held asset, rather than dividing by zero', () => {
-    const { prepared } = load(CASES[1] as Case);
+    const { prepared } = loadCase(CASES[1] as Case);
     const { values, blockers } = exposure(prepared);
     assert.equal(values.delta_cancellation_ratio, null);
     assert.ok(blockers.some((b) => b.code === 'no_held_asset'));
@@ -184,7 +113,7 @@ describe('example C — the paths example A does not exercise', () => {
   });
 
   it('classifies a put spread as losing its floor below the lower strike', () => {
-    const { prepared } = load(CASES[1] as Case);
+    const { prepared } = loadCase(CASES[1] as Case);
     const cls = classify(prepared).values;
     assert.equal(cls.protection_kind, 'put_spread');
     assert.equal(cls.protection_continues_below_lowest_strike, false);
@@ -193,7 +122,7 @@ describe('example C — the paths example A does not exercise', () => {
   });
 
   it('names every leg it had to model rather than measure', () => {
-    const { prepared } = load(CASES[1] as Case);
+    const { prepared } = loadCase(CASES[1] as Case);
     const modelled = exposure(prepared).blockers.find((b) => b.code === 'iv_modelled_not_marked');
     assert.ok(modelled, 'four unmarked legs must be reported, not silently defaulted');
     assert.deepEqual(modelled!.subjects, ['SYN', 'BUF_L', 'BUF_S', 'CAP']);
@@ -204,7 +133,7 @@ describe('act/365 day count', () => {
   it('gives whole-day tenors across a DST boundary', () => {
     // 229, 47, 139 and 320 days on example A. A local-time Date subtraction
     // drifts by an hour here and turns 229 into 228.9583.
-    const { prepared } = load(CASES[0] as Case);
+    const { prepared } = loadCase(CASES[0] as Case);
     for (const leg of prepared.legs) {
       const days = leg.T * 365;
       assert.equal(days, Math.round(days), `${leg.id} tenor ${days} is not a whole number of days`);
