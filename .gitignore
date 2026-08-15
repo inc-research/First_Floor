@@ -11,3 +11,7 @@ __pycache__/
 # Holdings files are the user's own data and must never be committed.
 *.csv
 !examples/*.csv
+
+# Built web bundle and emitted declarations.
+packages/web/dist/
+packages/web/dist-types/

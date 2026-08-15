@@ -1,0 +1,16 @@
+{
+  "name": "@first-floor/web",
+  "version": "0.2.0",
+  "private": true,
+  "description": "The static page. Reads files in-browser. No backend, no network calls after load.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test 'test/**/*.test.ts'",
+    "serve": "node serve.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}
