@@ -192,4 +192,28 @@ describe('the built stylesheet', () => {
     }
     assert.ok(!/ui-sans-serif/.test(css), 'a stray system stack means a rule was missed');
   });
+
+  it('routes every size through a scale token too', () => {
+    // The same argument as the families, made about the sizes: one number to
+    // turn per thing that changes size, and a hard-coded size cannot creep back
+    // in without this failing.
+    for (const token of ['--type-scale', '--wordmark-scale', '--nav-scale']) {
+      assert.match(css, new RegExp(`${token}:`), `${token} is not defined`);
+    }
+    const bare = [...css.matchAll(/font-size:\s*([^;]+);/g)]
+      .map((m) => m[1]!.trim())
+      .filter((v) => !v.includes('var(--'));
+    assert.deepEqual(bare, [], 'a font-size that does not multiply through a scale token');
+  });
+
+  it('scales the wordmark and the nav apart from the body', () => {
+    // They are multiples of what they measured before, not of the new body
+    // size. Compounding them with --type-scale would make the wordmark 4.5×.
+    assert.match(css, /\.masthead h1\s*\{[^}]*var\(--wordmark-scale\)/);
+    assert.match(css, /nav\.masthead-nav a\s*\{[^}]*var\(--nav-scale\)/);
+    assert.ok(
+      !/--wordmark-scale[^;]*--type-scale|--nav-scale[^;]*--type-scale/.test(css),
+      'the header scales must not compound with the body scale',
+    );
+  });
 });
