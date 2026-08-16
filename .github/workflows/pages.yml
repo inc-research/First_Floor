@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: MIT
+#
+# Publishes the built page to GitHub Pages.
+#
+# The page is three files — index.html, app.js, styles.css — and none of them
+# are in the repository: `packages/web/dist/` is ignored, because a built bundle
+# checked in beside its source is a second copy that goes stale. So the site is
+# built here, on every push to main, and the built folder is what Pages serves.
+#
+# This does not make the page a service. It is the same three files a clone
+# builds, opened over https instead of file://, and it still asks nothing of a
+# network once it has loaded — CI asserts that on the artefact before this
+# workflow ever runs.
+#
+# The Pages source must be set to GitHub Actions (Settings → Pages → Build and
+# deployment → Source). With the source left on a branch, Jekyll renders
+# README.md instead and the page never appears.
+
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# A queued deploy waits for the running one rather than cancelling it, so a
+# half-published site is never what is left behind.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: build the page
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: npm
+
+      - run: npm ci
+
+      # The web build reads the compiled workspace, so this comes first.
+      - name: Build the workspace
+        run: npm run build
+
+      - name: Build the page
+        # Fails if the bundle acquires a network call site or the stylesheet a
+        # url() that is not a data: URI.
+        run: npm run build -w @first-floor/web
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    name: deploy
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
