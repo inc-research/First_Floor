@@ -1,8 +1,30 @@
 // SPDX-License-Identifier: MIT
 
 import { parseCsv, parseNumber, type CsvTable } from './csv.ts';
-import { parseOptionName, type OptionNameFormat } from './optionNames.ts';
+import { parseOptionName, type ExpiryDay, type OptionNameFormat } from './optionNames.ts';
 import type { CollaredStructure, Constituent, OptionLeg, Underlying } from '../schema/types.ts';
+
+/**
+ * How a file announces which format it is, so a mapping can be offered for it
+ * without the user picking one (D-33).
+ *
+ * This is deliberately part of the *mapping data*, not of the recogniser's
+ * code. Adding support for another issuer is then a JSON file, and a format
+ * drift is an edit to that file rather than a bug report against a per-issuer
+ * adapter — the thing D-17 exists to prevent.
+ */
+export interface FormatSignature {
+  /**
+   * Regular-expression source matched against the file name. A named group
+   * `(?<ticker>…)` is read as the fund's ticker. Never required on its own: a
+   * renamed file still has to be recognisable from its contents.
+   */
+  filename?: string;
+  /** Header cells that must be present. Matched with punctuation and spacing ignored. */
+  headers: string[];
+  /** Strings expected somewhere above the header row. */
+  preamble?: string[];
+}
 
 /**
  * A saved column mapping.
@@ -20,6 +42,27 @@ export interface ColumnMapping {
   /** Column whose value separates one account from another, if the file mixes them. */
   account_column?: string;
   option_name_format: OptionNameFormat;
+  /** How this file is recognised, when it is one of the shipped issuer profiles. */
+  match?: FormatSignature;
+  /**
+   * Column the option's details are read from, when it is not the same one that
+   * identifies a share. An iShares export keys shares and cash on `Ticker` but
+   * writes the contract in `Name`; one column cannot serve both.
+   */
+  option_identifier?: string;
+  /**
+   * How the root is taken from the identifier under `explicit_columns`.
+   * `first` takes the leading whitespace-separated token, which is what a file
+   * writing `SPY PUT USD 10/30/2026` needs — left whole, every contract would
+   * get a root of its own. Defaults to `whole`.
+   */
+  root_token?: 'whole' | 'first';
+  /** Column stating the fund's net assets outright, sparing the user a number. */
+  net_assets_column?: string;
+  /** Column stating the date the file describes, where it is on every row. */
+  as_of_column?: string;
+  /** Which day to take when the option description names only a month. */
+  expiry_day?: ExpiryDay;
   columns: {
     /** Ticker, OCC identifier or description. */
     identifier?: string;
@@ -80,9 +123,13 @@ export interface MappedRow {
     position: 'long' | 'short';
     multiplier: number;
     markPerUnit: number | null;
+    /** The day of the expiry came from a convention, not from the file. */
+    expiryInferred: boolean;
   };
   holding?: { name: string; marketValue: number; sector?: string };
   cash?: { marketValue: number };
+  /** Net assets as the file states them, when it does. */
+  statedNetAssets?: number;
 }
 
 export interface MappedFile {
@@ -110,26 +157,44 @@ export function applyMapping(text: string, mapping: ColumnMapping): MappedFile {
     const account = get(row, mapping.account_column)?.trim() ?? null;
     const assetClass = (get(row, mapping.columns.asset_class) ?? '').trim().toLowerCase();
     const identifier = (get(row, mapping.columns.identifier) ?? '').trim();
+    // Where the contract is written, when that is a different column from the
+    // one naming a share.
+    const optionIdentifier = mapping.option_identifier === undefined
+      ? identifier
+      : (get(row, mapping.option_identifier) ?? '').trim();
     const quantity = parseNumber(get(row, mapping.columns.quantity));
     const marketValue = parseNumber(get(row, mapping.columns.market_value));
+    const stated = parseNumber(get(row, mapping.net_assets_column));
+    const netAssets = stated !== null && stated > 0 ? { statedNetAssets: stated } : {};
 
     const isCash = (mapping.cash_markers ?? ['cash', 'cash & equivalents', 'money market'])
       .some((m) => assetClass.includes(m.toLowerCase()) || identifier.toLowerCase() === m.toLowerCase());
     if (isCash) {
-      return { kind: 'cash', account, raw, cash: { marketValue: marketValue ?? 0 } };
+      return { kind: 'cash', account, raw, cash: { marketValue: marketValue ?? 0 }, ...netAssets };
     }
 
     const optionMarkers = mapping.option_markers ?? ['option', 'call', 'put', 'derivative'];
+    // A right column decides the row only when it actually holds a right. A
+    // file that breaks options into columns leaves those columns empty on its
+    // share rows, and reading the column's mere presence as "every row is an
+    // option" turns a hundred and fifty ordinary equities into a hundred and
+    // fifty rows the mapper reports it could not understand.
     const looksLikeOption =
-      mapping.columns.right !== undefined ||
+      (mapping.columns.right !== undefined && readRight(get(row, mapping.columns.right)) !== null) ||
       optionMarkers.some((m) => assetClass.includes(m.toLowerCase())) ||
       (mapping.option_name_format !== 'explicit_columns' &&
-        parseOptionName(identifier, mapping.option_name_format) !== null);
+        parseOptionName(optionIdentifier, mapping.option_name_format, expiryOptions(mapping)) !== null);
 
     if (looksLikeOption) {
-      const parsed = readOption(row, get, mapping, identifier, quantity);
+      const parsed = readOption(row, get, mapping, optionIdentifier, quantity);
       if (!parsed) {
-        return { kind: 'unreadable', account, raw, note: `Could not read an option from "${identifier}".` };
+        return {
+          kind: 'unreadable',
+          account,
+          raw,
+          note: `Could not read an option from "${optionIdentifier}".`,
+          ...netAssets,
+        };
       }
       const price = parseNumber(get(row, mapping.columns.price));
       const multiplier = parseNumber(get(row, mapping.columns.multiplier)) ?? 100;
@@ -141,11 +206,18 @@ export function applyMapping(text: string, mapping: ColumnMapping): MappedFile {
         account,
         raw,
         option: { ...parsed, multiplier, markPerUnit },
+        ...netAssets,
       };
     }
 
     if (identifier === '' && marketValue === null) {
-      return { kind: 'unreadable', account, raw, note: 'Row has neither an identifier nor a value.' };
+      return {
+        kind: 'unreadable',
+        account,
+        raw,
+        note: 'Row has neither an identifier nor a value.',
+        ...netAssets,
+      };
     }
 
     return {
@@ -157,6 +229,7 @@ export function applyMapping(text: string, mapping: ColumnMapping): MappedFile {
         marketValue: marketValue ?? 0,
         ...(get(row, mapping.columns.sector) ? { sector: (get(row, mapping.columns.sector) as string).trim() } : {}),
       },
+      ...netAssets,
     };
   });
 
@@ -184,19 +257,26 @@ function readOption(
   let strike: number;
   let expiry: string;
 
+  let expiryInferred = false;
+
   if (mapping.option_name_format === 'explicit_columns') {
-    const r = (get(row, mapping.columns.right) ?? '').trim().toLowerCase();
+    const r = readRight(get(row, mapping.columns.right));
     const s = parseNumber(get(row, mapping.columns.strike));
     const e = (get(row, mapping.columns.expiry) ?? '').trim();
-    if (s === null || e === '' || (r[0] !== 'c' && r[0] !== 'p')) return null;
-    root = identifier.toUpperCase();
-    right = r[0] === 'c' ? 'call' : 'put';
+    if (s === null || e === '' || r === null) return null;
+    // `first` for a file whose identifier reads `SPY PUT USD 10/30/2026`: left
+    // whole, every contract would carry a root of its own and the structure
+    // would come out as a hundred underlyings rather than one.
+    root = (mapping.root_token === 'first' ? (identifier.split(/\s+/)[0] ?? '') : identifier).toUpperCase();
+    if (root === '') return null;
+    right = r;
     strike = s;
     expiry = normaliseDate(e);
   } else {
-    const parsed = parseOptionName(identifier, mapping.option_name_format);
+    const parsed = parseOptionName(identifier, mapping.option_name_format, expiryOptions(mapping));
     if (!parsed) return null;
     ({ root, right, strike, expiry } = parsed);
+    expiryInferred = parsed.expiry_inferred === true;
   }
 
   // Direction lives in `position`, never in a sign on contracts (spec §0). A
@@ -209,7 +289,53 @@ function readOption(
   const contracts = Math.abs(quantity ?? 0);
   if (contracts === 0) return null;
 
-  return { root, right, strike, expiry, contracts, position };
+  return { root, right, strike, expiry, contracts, position, expiryInferred };
+}
+
+/**
+ * Read call-or-put from a column that may say more than that.
+ *
+ * `C` and `P` are the easy case. A file whose type column says
+ * `EQUITY PUT OPTION` is just as clear to a reader and answers `e` to a test on
+ * the first character, so the word is looked for before the initial is.
+ *
+ * The initial is then only accepted on its own. Reading the first letter of
+ * anything was tried and is wrong: the same column in the same file says
+ * `CURRENCIES` on the cash row, which begins with a `c` and is not a call.
+ */
+function readRight(raw: string | undefined): 'call' | 'put' | null {
+  const text = (raw ?? '').trim().toLowerCase();
+  if (text === '') return null;
+  if (/\bputs?\b/.test(text)) return 'put';
+  if (/\bcalls?\b/.test(text)) return 'call';
+  // Spreadsheet exports lose the space: `EQUITY PUTOPTION`.
+  if (/put/.test(text)) return 'put';
+  if (/call/.test(text)) return 'call';
+  if (text === 'p') return 'put';
+  if (text === 'c') return 'call';
+  return null;
+}
+
+function expiryOptions(mapping: ColumnMapping): { expiryDay?: ExpiryDay } {
+  return mapping.expiry_day === undefined ? {} : { expiryDay: mapping.expiry_day };
+}
+
+/**
+ * Net assets as the file states them, for one account.
+ *
+ * Only when every row that states a figure agrees. A file mixing funds repeats
+ * the fund's own net assets on each of its rows, so disagreement means the
+ * column is not what the mapping thinks it is, and a number picked out of a
+ * disagreement is worse than no number at all (D-16).
+ */
+export function statedNetAssetsFor(file: MappedFile, account: string | null): number | null {
+  const values = new Set(
+    file.rows
+      .filter((r) => account === null || r.account === account)
+      .map((r) => r.statedNetAssets)
+      .filter((v): v is number => v !== undefined),
+  );
+  return values.size === 1 ? [...values][0] as number : null;
 }
 
 function normaliseDate(raw: string): string {
@@ -347,6 +473,17 @@ export function synthesiseStructure(file: MappedFile, input: SynthesisInput): Sy
       `${unreadable.length} row${unreadable.length === 1 ? '' : 's'} could not be read and ${
         unreadable.length === 1 ? 'was' : 'were'
       } left out. Nothing was guessed at.`,
+    );
+  }
+  const inferredExpiries = optionRows.filter((r) => r.option!.expiryInferred);
+  if (inferredExpiries.length > 0) {
+    const dates = [...new Set(inferredExpiries.map((r) => r.option!.expiry))].sort();
+    notes.push(
+      `The file names the month each contract expires in, not the day. ${dates.join(', ')} ` +
+      `${dates.length === 1 ? 'was' : 'were'} taken by convention, not read. Check ${
+        dates.length === 1 ? 'it' : 'them'
+      } against the fund's outcome-period dates and edit below if they differ — time to expiry sets ` +
+      'every mark-to-market figure in the report.',
     );
   }
   if (optionRows.some((r) => r.option!.markPerUnit === null)) {

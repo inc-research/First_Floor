@@ -91,13 +91,21 @@ server.registerTool(
   {
     title: 'Map a holdings CSV to a structure document',
     description:
-      'Apply a saved column mapping to any holdings CSV. Called without a synthesis block it ' +
-      'reports the accounts, option roots and row counts it found; called with one it returns a ' +
-      'draft structure document. Underlying levels are never guessed at, because a holdings file ' +
-      'does not record them.',
+      'Apply a column mapping to any holdings CSV. Called without a mapping it recognises the file ' +
+      'against the shipped issuer profiles, the same way the page does. Called without a synthesis ' +
+      'block it reports the accounts, option roots and row counts it found; called with one it ' +
+      'returns a draft structure document. Underlying levels are never guessed at, because a ' +
+      'holdings file does not record them.',
     inputSchema: {
       csv: z.string().describe('The file contents. Nothing is read from disk by this server.'),
-      mapping: z.unknown().describe('A column mapping document.'),
+      mapping: z
+        .unknown()
+        .optional()
+        .describe('A column mapping document. Omit to have the file recognised from its own shape.'),
+      filename: z
+        .string()
+        .optional()
+        .describe('The file’s name as downloaded. Helps recognition; never required.'),
       synthesis: z
         .object({
           as_of: z.string().optional(),

@@ -17,8 +17,25 @@ export type OptionNameFormat =
   | 'spaced'
   /** Delimiter-separated: `SPY-20270331-584-P`. */
   | 'dashed'
+  /** Month-coded, strike after an `@`: `NOV26 IVV US P @ 712.8`. */
+  | 'month_at'
   /** The file already has right, strike and expiry in their own columns. */
   | 'explicit_columns';
+
+/**
+ * Which day of a month-precision expiry to take.
+ *
+ * Some descriptions name only a month. The day has to come from somewhere, and
+ * the two conventions worth naming are the listed monthly expiry (third Friday)
+ * and the end of an outcome period (last business day). Whichever is chosen is
+ * an *inference*, and every parse that used one says so.
+ */
+export type ExpiryDay = 'last_business_day' | 'third_friday';
+
+export interface OptionNameOptions {
+  /** Used only by formats that carry a month without a day. */
+  expiryDay?: ExpiryDay;
+}
 
 export interface ParsedOptionName {
   root: string;
@@ -26,6 +43,12 @@ export interface ParsedOptionName {
   strike: number;
   /** ISO date. */
   expiry: string;
+  /**
+   * True when the day of `expiry` was supplied by convention rather than read.
+   * Carried all the way to the review step, because a date that looks measured
+   * and is not is exactly the kind of quiet default invariant 3 forbids.
+   */
+  expiry_inferred?: boolean;
 }
 
 const MONTHS: Record<string, number> = {
@@ -41,7 +64,11 @@ const MONTHS: Record<string, number> = {
  * mis-parsed strike produces a report that looks entirely reasonable and is
  * entirely wrong.
  */
-export function parseOptionName(raw: string, format: OptionNameFormat): ParsedOptionName | null {
+export function parseOptionName(
+  raw: string,
+  format: OptionNameFormat,
+  options: OptionNameOptions = {},
+): ParsedOptionName | null {
   const text = raw.trim();
   if (text === '') return null;
   switch (format) {
@@ -51,6 +78,8 @@ export function parseOptionName(raw: string, format: OptionNameFormat): ParsedOp
       return parseSpaced(text);
     case 'dashed':
       return parseDashed(text);
+    case 'month_at':
+      return parseMonthAt(text, options.expiryDay ?? 'third_friday');
     case 'explicit_columns':
       return null;
   }
@@ -149,6 +178,85 @@ function parseDashed(text: string): ParsedOptionName | null {
   if (strike === null) return null;
 
   return { root, right: right.right, strike, expiry };
+}
+
+/**
+ * Month-coded, strike after an `@`: `NOV26 IVV US P @ 712.8`.
+ *
+ * Unlike `spaced`, the root is not the first token — the month is — and the
+ * description carries **no day**. That missing day is the whole reason this is
+ * a separate format rather than a tolerance added to `spaced`: reading `NOV26`
+ * as a root and inventing a date silently is precisely the failure mode the
+ * other parsers are written to avoid, so the month is read, the day is supplied
+ * by the stated convention, and the result is flagged as inferred.
+ */
+function parseMonthAt(text: string, expiryDay: ExpiryDay): ParsedOptionName | null {
+  const tokens = text.split(/\s+/).filter((t) => t !== '');
+  if (tokens.length < 4) return null;
+
+  // The month token: three letters of a month name followed by a year.
+  let monthIndex = -1;
+  let month = 0;
+  let year = 0;
+  for (let i = 0; i < tokens.length; i++) {
+    const m = /^([A-Za-z]{3})[- ]?(\d{2}|\d{4})$/.exec(tokens[i] as string);
+    if (!m) continue;
+    const n = MONTHS[(m[1] as string).toLowerCase()];
+    if (n === undefined) continue;
+    const yy = Number(m[2]);
+    monthIndex = i;
+    month = n;
+    year = yy < 100 ? (yy < 70 ? 2000 + yy : 1900 + yy) : yy;
+    break;
+  }
+  if (monthIndex === -1) return null;
+
+  const root = tokens[monthIndex + 1];
+  if (root === undefined || !/^[A-Za-z0-9.$^]{1,6}$/.test(root)) return null;
+
+  const right = findRight(tokens.slice(monthIndex + 2));
+  if (!right) return null;
+
+  // After the `@` when there is one; otherwise the last bare positive number.
+  const at = tokens.indexOf('@');
+  const candidates = at === -1 ? tokens.slice(monthIndex + 2) : tokens.slice(at + 1);
+  let strike: number | null = null;
+  for (const t of candidates) {
+    if (t === right.token) continue;
+    const n = Number(t.replace(/[$,]/g, ''));
+    if (Number.isFinite(n) && n > 0) strike = n;
+  }
+  if (strike === null) return null;
+
+  return {
+    root: root.toUpperCase(),
+    right: right.right,
+    strike,
+    expiry: resolveExpiryDay(year, month, expiryDay),
+    expiry_inferred: true,
+  };
+}
+
+/**
+ * Turn a month into a date under a named convention.
+ *
+ * `third_friday` is the listed monthly expiry. `last_business_day` is where a
+ * defined-outcome period ends, which is what a FLEX series written for one
+ * follows. Neither is derivable from the file; both are stated choices.
+ */
+export function resolveExpiryDay(year: number, month: number, rule: ExpiryDay): string {
+  if (rule === 'third_friday') {
+    const firstDow = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+    // 5 is Friday. Days to the first Friday, then two weeks on.
+    const day = 1 + ((5 - firstDow + 7) % 7) + 14;
+    return `${year}-${pad(month)}-${pad(day)}`;
+  }
+  // Last calendar day, walked back off a weekend.
+  const last = new Date(Date.UTC(year, month, 0));
+  while (last.getUTCDay() === 0 || last.getUTCDay() === 6) {
+    last.setUTCDate(last.getUTCDate() - 1);
+  }
+  return `${last.getUTCFullYear()}-${pad(last.getUTCMonth() + 1)}-${pad(last.getUTCDate())}`;
 }
 
 function findRight(tokens: string[]): { right: Right; token: string } | null {

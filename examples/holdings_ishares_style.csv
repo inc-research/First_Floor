@@ -1,0 +1,17 @@
+Synthetic Large Cap Buffer ETF
+Fund Holdings as of,"Aug 13, 2026"
+Inception Date,"Oct 07, 2025"
+Shares Outstanding,"2,560,000.00"
+Stock,"-"
+Bond,"-"
+Cash,"-"
+Other,"-"
+
+Ticker,Name,Type,Sector,Asset Class,Market Value,Weight (%),Notional Value,Shares,Price,Location,Exchange,Currency,FX Rate,Market Currency,Accrual Date
+"REF","SYNTHETIC CORE INDEX FUND","EQUITY","Financials","Equity","72,833,004.00","101.69","72,833,004.00","93,200.00","781.47","United States","Synthetic Exchange","USD","1.00","USD","-"
+"REF US FLEX","JAN27 REF US P @ 684.94","OPTION","Cash and/or Derivatives","Other Derivatives","748,281.52","1.04","-9,991,260.51","947.00","7.90","United States","FLEX","USD","1.00","USD","-"
+"XSYN","SYNTHETIC CASH FUND TREASURY","FUND","Cash and/or Derivatives","Money Market","653,470.63","0.91","653,470.63","653,471.00","1.00","United States","-","USD","1.00","USD","-"
+"SYNFT","CASH COLLATERAL SYNFT USD","CASH","Cash and/or Derivatives","Cash Collateral and Margins","76,000.00","0.11","76,000.00","76,000.00","100.00","United States","-","USD","1.00","USD","Jun 16, 2022"
+"USD","USD CASH","CASH","Cash and/or Derivatives","Cash","-6,488.44","-0.01","-6,488.44","-6,488.00","100.00","United States","-","USD","1.00","USD","-"
+"REF US FLEX","JAN27 REF US P @ 616.45","OPTION","Cash and/or Derivatives","Other Derivatives","-373,525.21","-0.52","4,655,417.84","-947.00","3.94","United States","FLEX","USD","1.00","USD","-"
+"REF US FLEX","JAN27 REF US C @ 798.98","OPTION","Cash and/or Derivatives","Other Derivatives","-2,305,480.97","-3.22","-34,800,994.21","-947.00","24.35","United States","FLEX","USD","1.00","USD","-"

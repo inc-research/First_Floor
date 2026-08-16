@@ -157,20 +157,36 @@ export {
 export { parseCsv, parseNumber, type CsvOptions, type CsvTable } from './adapters/csv.ts';
 export {
   parseOptionName,
+  resolveExpiryDay,
+  type ExpiryDay,
   type OptionNameFormat,
+  type OptionNameOptions,
   type ParsedOptionName,
 } from './adapters/optionNames.ts';
 export {
   applyMapping,
   rootsFor,
+  statedNetAssetsFor,
   synthesiseStructure,
   type ColumnMapping,
+  type FormatSignature,
   type MappedFile,
   type MappedRow,
   type RowKind,
   type SynthesisInput,
   type SynthesisResult,
 } from './adapters/mapping.ts';
+// Recognising which shipped mapping a file was written for. Signatures live in
+// the mapping data, so another issuer is a JSON file and never a branch (D-33).
+export {
+  RECOGNITION_THRESHOLD,
+  parseLooseDate,
+  recogniseFormat,
+  type Recognition,
+  type RecogniseInput,
+} from './adapters/recognise.ts';
+// Both surfaces read the same profiles, or they have diverged.
+export { SHIPPED_MAPPINGS } from './adapters/profiles.generated.ts';
 
 // The blocker model behind invariant 3.
 export {

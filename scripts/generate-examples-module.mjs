@@ -27,12 +27,12 @@ const DOCS = [
   ['referenceComposition', 'reference_composition_synthetic.json'],
 ];
 
-/** Shipped column mappings, offered in the mapper so a new file usually needs no work. */
-const MAPPINGS = [
-  ['mappingOccLongForm', 'mapping_occ_long_form.json'],
-  ['mappingSpacedDescription', 'mapping_spaced_description.json'],
-  ['mappingExplicitColumns', 'mapping_explicit_columns.json'],
-];
+/**
+ * The column mappings are not here. They live in
+ * `packages/core/src/adapters/profiles.generated.ts`, because the page and the
+ * MCP server have to read a file identically or they have diverged (D-41), and
+ * a copy in each surface is two places to drift.
+ */
 
 /** Raw text, not JSON: a worked holdings file so the CSV path can be tried without one. */
 const TEXT = [['exampleHoldingsCsv', 'holdings_synthetic.csv']];
@@ -49,7 +49,7 @@ export function render() {
     ' */',
     '',
   ];
-  for (const [name, file] of [...DOCS, ...MAPPINGS]) {
+  for (const [name, file] of DOCS) {
     const json = JSON.parse(readFileSync(new URL(`examples/${file}`, ROOT), 'utf8'));
     parts.push(`export const ${name} = ${JSON.stringify(json, null, 2)} as const;`, '');
   }
@@ -57,12 +57,6 @@ export function render() {
     const text = readFileSync(new URL(`examples/${file}`, ROOT), 'utf8');
     parts.push(`export const ${name} = ${JSON.stringify(text)};`, '');
   }
-  parts.push(
-    'export const shippedMappings = [',
-    ...MAPPINGS.map(([name]) => `  ${name},`),
-    '] as const;',
-    '',
-  );
   return parts.join('\n');
 }
 

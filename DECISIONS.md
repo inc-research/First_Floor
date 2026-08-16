@@ -283,6 +283,31 @@ conventional statistic with checkable algebra — zero against an identical comp
 disjoint one, bounded in [0,1], invariant to relabelling and to rescaling either side — and those
 hold for compositions nobody has written down, which a frozen number does not.
 
+### D-41 · Issuer recognition is data, and it explains itself
+Settled 16 August 2026. A holdings file from a large issuer is not an arbitrary CSV: the file name
+and the header row are both stable, and asking someone to answer twelve dropdowns about a file whose
+shape is already known is the step at which an ordinary user gives up. So a mapping may carry a
+`match` block — a header fingerprint, a file-name pattern, preamble markers — and a recogniser picks
+the profile that fits.
+
+The line this must not cross is D-17. **Nothing about an issuer is ever encoded in code.** A profile
+is an ordinary `ColumnMapping` in `examples/`, supporting another issuer is a JSON file, and a
+drifted export is an edit to that file. `applyMapping` remains the single path a file travels, and
+the recognised mapping is shown prefilled and editable exactly as a hand-built one is (D-23).
+
+This qualifies D-39 rather than reversing it: header matching *nominates* a profile, and the profile
+is still required to read the file before it is offered. A signature that matches a file whose body
+is something else is discarded on the result, which is the half of D-39 that was load-bearing.
+
+Two consequences are deliberate. Recognition states its evidence — which headers matched, whether
+the name fit, how many contracts came out — because a page that silently fills a form in is asking
+to be trusted about something the user can no longer see. And the file name may only ever *add*
+confidence: renaming a download is the likelier accident, so a renamed file is still recognised from
+its columns alone.
+
+*Reverses if:* profiles start needing per-issuer behaviour that no mapping field can express. The
+answer then is a new mapping field, and only if that fails is it a new decision.
+
 ---
 
 ## Open

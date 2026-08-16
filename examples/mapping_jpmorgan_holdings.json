@@ -1,0 +1,41 @@
+{
+  "schema_version": "0.2.0",
+  "name": "J.P. Morgan ETF holdings export",
+  "option_name_format": "explicit_columns",
+  "root_token": "first",
+  "option_identifier": "Security Description",
+  "match": {
+    "filename": "^JPMorgan-.*Holdings.*\\.csv$",
+    "headers": [
+      "Ticker",
+      "Security Description",
+      "Security Type",
+      "Method",
+      "Shares/Par",
+      "Market Value (USD)",
+      "Country",
+      "Currency",
+      "Sector",
+      "Industry",
+      "Coupon",
+      "Maturity Date",
+      "Contract Size",
+      "Strike Price",
+      "% of Net Assets"
+    ]
+  },
+  "columns": {
+    "identifier": "Ticker",
+    "name": "Security Description",
+    "asset_class": "Security Type",
+    "quantity": "Shares/Par",
+    "market_value": "Market Value (USD)",
+    "sector": "Sector",
+    "right": "Security Type",
+    "strike": "Strike Price",
+    "expiry": "Maturity Date",
+    "multiplier": "Contract Size"
+  },
+  "option_markers": ["option"],
+  "cash_markers": ["money market", "currencies"]
+}

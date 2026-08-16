@@ -1,0 +1,18 @@
+,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,
+Holdings,Synthetic Hedged Equity Laddered Overlay ETF - 000000000,,,,,,As of Date: 08/14/2026,,,,,,,,,
+,,,,,,,,,,,,,,,,
+Ticker,Security Description,Security Type,Method,Shares/Par,Market Value (USD),Country,Currency,Sector,Industry,Coupon,Maturity Date,Effective Date,Contract Size,Strike Price,% of Market Value,% of Net Assets
+AAA,ALPHA SYNTHETIC CORP COMMON STOCK,DOMESTIC COMMON STOCK,Physical,1841228,"$ 414,570,896.48",United States,USD,Information Technology,Semiconductors,0.00,,,,$ 0.00,8.59%,8.59%
+BBB,BETA SYNTHETIC INC COMMON STOCK,DOMESTIC COMMON STOCK,Physical,1000580,"$ 306,107,439.40",United States,USD,Information Technology,Software,0.00,,,,$ 0.00,6.34%,6.35%
+CCC,GAMMA SYNTHETIC PLC COMMON STOCK,DOMESTIC COMMON STOCK,Physical,590625,"$ 292,595,625.00",United States,USD,Consumer Discretionary,Broadline Retail,0.00,,,,$ 0.00,6.06%,6.07%
+SYNXX,SYNTHETIC PRIME MONEY,MONEY MARKET,Physical,111237809,"$ 111,260,056.65",United States,USD,,,0.00,,,,$ 0.00,2.31%,2.31%
+,CASH,CURRENCIES,Physical,1304178,"$ 1,304,178.86",United States,USD,,,0.00,,,,$ 0.00,0.03%,0.03%
+REF UA 10/30/26 P707 Equity,REF PUT USD 10/30/2026,EQUITY PUT OPTION,Physical,20438,"$ 10,014,620.00",United States,USD,,,0.00,10/30/2026,,100,$ 707.00,0.21%,0.21%
+REF UA 10/30/26 P595 Equity,REF PUT USD 10/30/2026,EQUITY PUT OPTION,Physical,-20438,"-$ 2,432,122.00",United States,USD,,,0.00,10/30/2026,,100,$ 595.00,-0.05%,-0.05%
+REF UA 10/30/26 C783 Equity,REF CALL USD 10/30/2026,EQUITY CALL OPTION,Physical,-20438,"-$ 37,912,490.00",United States,USD,,,0.00,10/30/2026,,100,$ 783.00,-0.79%,-0.79%
+,,,,,,,,,,,,,,,,
+Holdings are subject to change.,,,,,,,,,,,,,,,,

@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsc --build",
     "test": "npm run test --workspaces --if-present",
+    "smoke:recognise": "node scripts/smoke-recognise.mjs",
     "typecheck": "tsc --build --force"
   },
   "devDependencies": {

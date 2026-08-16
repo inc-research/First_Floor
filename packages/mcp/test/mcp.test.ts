@@ -116,6 +116,36 @@ describe('the tools', () => {
     assert.match(built.text, /What was inferred rather than read/);
   });
 
+  it('recognises an issuer export with no mapping supplied', () => {
+    // The page and this server have to read a file identically or they have
+    // diverged, which is why both call the same recogniser in core (D-41).
+    const r = mapCsvTool({
+      csv: readText('examples/holdings_ishares_style.csv'),
+      filename: 'SYNB_holdings.csv',
+    });
+    assert.match(r.text, /Recognised as: iShares/);
+    assert.match(r.text, /expected column headers/);
+    assert.match(r.text, /Ticker from the file name: SYNB/);
+    assert.match(r.text, /The file is dated 2026-08-13/);
+    assert.match(r.text, /3 options/);
+    assert.match(r.text, /Option roots needing a level: REF/);
+  });
+
+  it('takes a stated fund size out of a family-wide file', () => {
+    const r = mapCsvTool({
+      csv: readText('examples/holdings_multi_fund_style.csv'),
+      synthesis: { account: 'FUND-A' },
+    });
+    assert.match(r.text, /Accounts: FUND-A, FUND-B, FUND-C/);
+    assert.match(r.text, /Net assets stated by the file: 73216535/);
+  });
+
+  it('asks for a mapping rather than guessing at an unrecognised file', () => {
+    const r = mapCsvTool({ csv: 'a,b,c\n1,2,3\n' });
+    assert.match(r.text, /matches none of the shipped issuer profiles/);
+    assert.match(r.text, /nothing is guessed at/i);
+  });
+
   it('summarises which figures a position supports', () => {
     const r = summariseTool({ structure: STRUCTURE, scenario: SCENARIO });
     assert.match(r.text, /terminal_floor: computed/);

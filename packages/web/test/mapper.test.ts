@@ -7,14 +7,40 @@
 
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { installDom, type FakeElement, type InstalledDom } from './dom-shim.ts';
 
+const ROOT = new URL('../../../', import.meta.url);
+const readText = (p: string): string => readFileSync(fileURLToPath(new URL(p, ROOT)), 'utf8');
+
 let dom: InstalledDom;
+let savedFileReader: PropertyDescriptor | undefined;
 before(() => {
   dom = installDom();
+  // The upload path reads the file through a FileReader. Stubbed synchronously
+  // rather than avoided, because the file *name* only reaches recognition
+  // through this handler and a test that bypassed it would not cover it.
+  savedFileReader = Object.getOwnPropertyDescriptor(globalThis, 'FileReader');
+  Object.defineProperty(globalThis, 'FileReader', {
+    value: class {
+      onload: (() => void) | null = null;
+      result: string | null = null;
+      readAsText(file: { text: string }): void {
+        this.result = file.text;
+        this.onload?.();
+      }
+    },
+    configurable: true,
+    writable: true,
+  });
 });
-after(() => dom.uninstall());
+after(() => {
+  dom.uninstall();
+  if (savedFileReader) Object.defineProperty(globalThis, 'FileReader', savedFileReader);
+  else delete (globalThis as Record<string, unknown>)['FileReader'];
+});
 
 import { mapperView } from '../src/views/mapper.ts';
 import { startView } from '../src/views/start.ts';
@@ -40,6 +66,25 @@ const setNumber = (v: FakeElement, label: string, value: string): void => {
   const input = field!.findAll('input')[0]!;
   input.value = value;
   input.dispatch('change');
+};
+
+/** Render a mapper and hand it a named file, the way the page is actually used. */
+function openWithFile(text: string, name: string, handlers: Partial<Parameters<typeof mapperView>[0]> = {}) {
+  const v = mapperView({
+    onDraft: handlers.onDraft ?? noop,
+    onManual: handlers.onManual ?? noop,
+    onCancel: handlers.onCancel ?? noop,
+  }) as unknown as FakeElement;
+  const input = v.findAll('input').find((i) => i.getAttribute('type') === 'file')!;
+  input.files = [{ name, text }];
+  input.dispatch('change');
+  return v;
+}
+
+const valueOf = (v: FakeElement, label: string): string => {
+  const field = v.findByClass('field').find((f) => f.textContent.startsWith(label));
+  assert.ok(field, `no field labelled "${label}"`);
+  return field!.findAll('input')[0]!.value;
 };
 
 const pickIndex = (v: FakeElement, root: string): void => {
@@ -212,5 +257,102 @@ describe('the column mapper', () => {
     assert.ok(fallbackButton, 'no fallback to manual entry was offered');
     fallbackButton!.click();
     assert.equal(wentManual, true);
+  });
+});
+
+describe('recognising an issuer’s own export', () => {
+  const ISHARES = readText('examples/holdings_ishares_style.csv');
+  const MULTI = readText('examples/holdings_multi_fund_style.csv');
+
+  it('names what it recognised, and why', () => {
+    const v = openWithFile(ISHARES, 'SYNB_holdings.csv');
+    assert.match(v.textContent, /Recognised: iShares/);
+    assert.match(v.textContent, /SYNB/, 'the ticker comes off the file name');
+    assert.match(v.textContent, /3 contracts/);
+    // The evidence is the point: a page that silently fills twelve dropdowns in
+    // is asking to be trusted about something no longer on screen.
+    assert.match(v.textContent, /expected column headers/);
+    assert.match(v.textContent, /the file name follows/);
+  });
+
+  it('folds the column form away, one button from being back', () => {
+    const v = openWithFile(ISHARES, 'SYNB_holdings.csv');
+    assert.ok(!v.textContent.includes('Which column is which'), 'the form is answered already');
+    const adjust = v.findAll('button').find((b) => b.textContent.includes('Adjust the mapping'));
+    assert.ok(adjust, 'nothing is hidden for good');
+    adjust!.click();
+    assert.match(v.textContent, /Which column is which/);
+    assert.match(v.textContent, /Option description/);
+  });
+
+  it('still asks for the level the file cannot record, and builds from it', () => {
+    let handed: string | null = null;
+    const v = openWithFile(ISHARES, 'SYNB_holdings.csv', { onDraft: (j) => { handed = j; } });
+    assert.match(v.textContent, /REF level today/);
+    setNumber(v, 'REF level today', '781.47');
+    v.findAll('button').find((b) => b.textContent.includes('Build the structure'))!.click();
+
+    const result = validateStructure(JSON.parse(handed!));
+    assert.ok(result.ok, `rejected: ${JSON.stringify(result.problems ?? [], null, 2)}`);
+    assert.equal(result.document.option_legs.length, 3);
+    assert.equal(result.document.as_of, '2026-08-13', 'the date was read from the file');
+  });
+
+  it('says which expiry days it supplied rather than read', () => {
+    // The file names a month and no day. A date that looks measured and is not
+    // is exactly the quiet default the rest of this codebase refuses.
+    const v = openWithFile(ISHARES, 'SYNB_holdings.csv');
+    assert.match(v.textContent, /day assumed/);
+    assert.match(v.textContent, /taken by convention rather than read/);
+  });
+
+  it('takes each fund’s stated size out of a family-wide file', () => {
+    const v = openWithFile(MULTI, 'xyz_holdings.csv');
+    assert.match(v.textContent, /3 accounts/);
+    const picker = v.findAll('select').find((s) =>
+      s.findAll('option').some((o) => o.getAttribute('value') === 'FUND-A'))!;
+    picker.value = 'FUND-A';
+    picker.dispatch('change');
+    assert.equal(valueOf(v, 'Fund size'), '73216535');
+    assert.match(v.textContent, /As the file states it/);
+  });
+
+  it('offers a filter once the list is too long to read', () => {
+    // A family-wide file runs to a couple of hundred funds, and scrolling a
+    // dropdown that long is a worse way to find one than typing its ticker.
+    const [header, ...rows] = MULTI.trimEnd().split('\n');
+    const many = [
+      header,
+      ...Array.from({ length: 15 }, (_, i) =>
+        rows
+          .filter((r) => r.includes('FUND-A'))
+          .map((r) => r.replace('FUND-A', `FUND-${String(i).padStart(2, '0')}`))
+          .join('\n')),
+    ].join('\n');
+
+    const v = openWithFile(many, 'many_holdings.csv');
+    const filter = v.findByClass('field').find((f) => f.textContent.startsWith('Find an account'));
+    assert.ok(filter, 'fifteen accounts and no way to search them');
+
+    const box = filter!.findAll('input')[0]!;
+    const picker = v.findAll('select').find((s) =>
+      s.findAll('option').some((o) => o.getAttribute('value') === 'FUND-07'))!;
+    box.value = 'FUND-1';
+    box.dispatch('input');
+    const left = picker.findAll('option').map((o) => o.getAttribute('value')).filter((x) => x !== '');
+    assert.deepEqual(left, ['FUND-10', 'FUND-11', 'FUND-12', 'FUND-13', 'FUND-14']);
+  });
+
+  it('says nothing of the sort about a file no profile claims', () => {
+    // The worked example is mapped by hand, and must keep behaving as it did.
+    const v = openWithExample();
+    assert.ok(!v.textContent.includes('Recognised:'));
+    assert.match(v.textContent, /Which column is which/);
+  });
+
+  it('tells the reader where the file comes from and not to rename it', () => {
+    const v = mapperView({ onDraft: noop, onManual: noop, onCancel: noop }) as unknown as FakeElement;
+    assert.match(v.textContent, /issuer’s own fund page/);
+    assert.match(v.textContent, /Do not rename it/);
   });
 });

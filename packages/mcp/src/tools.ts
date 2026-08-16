@@ -15,6 +15,9 @@ import {
   buildReport,
   figures,
   prepareStructure,
+  recogniseFormat,
+  SHIPPED_MAPPINGS,
+  statedNetAssetsFor,
   synthesiseStructure,
   sweep,
   validateReferenceComposition,
@@ -135,7 +138,10 @@ export function sweepTool(args: SweepArgs): ToolResult {
 
 export interface MapCsvArgs {
   csv: string;
-  mapping: ColumnMapping;
+  /** Omit to have a shipped issuer profile recognised from the file itself. */
+  mapping?: ColumnMapping;
+  /** The file's name as downloaded. Helps recognition; never required. */
+  filename?: string;
   synthesis?: Partial<SynthesisInput>;
 }
 
@@ -146,24 +152,56 @@ export interface MapCsvArgs {
  * roots, row counts — which is the step someone needs before they can say which
  * account to use and what the underlyings are worth. With one, it returns a
  * draft structure document.
+ *
+ * Without a `mapping` it recognises the file against the shipped issuer
+ * profiles, the same way the page does. The two surfaces read a file
+ * identically or they have diverged, which is the whole reason both of them
+ * call into core rather than doing this themselves.
  */
 export function mapCsvTool(args: MapCsvArgs): ToolResult {
+  let mapping = args.mapping;
+  let recognised: string[] = [];
+
+  if (!mapping) {
+    const hit = recogniseFormat(
+      { text: args.csv, ...(args.filename !== undefined ? { filename: args.filename } : {}) },
+      SHIPPED_MAPPINGS,
+    );
+    if (!hit) {
+      return fail(
+        'No mapping was given and this file matches none of the shipped issuer profiles. Supply a ' +
+          '`mapping` describing its columns — nothing is guessed at, because a mapping that reads ' +
+          'the wrong column produces a report that looks entirely reasonable and is wrong.',
+      );
+    }
+    mapping = hit.mapping;
+    recognised = [
+      `Recognised as: ${hit.mapping.name} (${hit.evidence.join('; ')}).`,
+      ...(hit.hints.ticker !== undefined ? [`Ticker from the file name: ${hit.hints.ticker}.`] : []),
+      ...(hit.hints.as_of !== undefined ? [`The file is dated ${hit.hints.as_of}.`] : []),
+      '',
+    ];
+  }
+
   let mapped;
   try {
-    mapped = applyMapping(args.csv, args.mapping);
+    mapped = applyMapping(args.csv, mapping);
   } catch (e) {
     return fail(`Could not read that CSV with this mapping: ${(e as Error).message}`);
   }
 
   if (!args.synthesis?.as_of || !args.synthesis.reference_id || !args.synthesis.levels) {
     const unreadable = mapped.rows.filter((r) => r.kind === 'unreadable');
+    const stated = statedNetAssetsFor(mapped, args.synthesis?.account ?? null);
     return ok(
       [
+        ...recognised,
         `Read ${mapped.table.body.length} rows: ${mapped.counts.option} options, ` +
           `${mapped.counts.equity} holdings, ${mapped.counts.cash} cash, ` +
           `${mapped.counts.unreadable} unreadable.`,
         mapped.accounts.length > 0 ? `Accounts: ${mapped.accounts.join(', ')}` : 'No account column mapped.',
         `Option roots needing a level: ${mapped.roots.join(', ') || 'none'}`,
+        ...(stated !== null ? [`Net assets stated by the file: ${stated}`] : []),
         '',
         'Call again with `synthesis` supplying `as_of`, `reference_id` and a `levels` entry for each ' +
           'root to get a draft structure document. Levels are not in a holdings file and are not ' +
@@ -179,6 +217,7 @@ export function mapCsvTool(args: MapCsvArgs): ToolResult {
   const check = validateStructure(built.document);
   return ok(
     [
+      ...recognised,
       check.ok
         ? 'Draft structure document (valid):'
         : `Draft structure document — NOT yet valid:\n${check.problems.map((p) => `  - ${p.message}`).join('\n')}`,

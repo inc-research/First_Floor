@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.2.0",
+  "name": "Daily holdings file covering a whole fund family",
+  "header_row": 0,
+  "option_name_format": "spaced",
+  "account_column": "Account",
+  "option_identifier": "SecurityName",
+  "net_assets_column": "NetAssets",
+  "as_of_column": "Date",
+  "match": {
+    "filename": "_holdings\\.csv$",
+    "headers": [
+      "Date",
+      "Account",
+      "StockTicker",
+      "CUSIP",
+      "SecurityName",
+      "Shares",
+      "Price",
+      "MarketValue",
+      "Weightings",
+      "NetAssets",
+      "SharesOutstanding",
+      "CreationUnits",
+      "MoneyMarketFlag"
+    ]
+  },
+  "columns": {
+    "identifier": "StockTicker",
+    "name": "SecurityName",
+    "asset_class": "MoneyMarketFlag",
+    "quantity": "Shares",
+    "price": "Price",
+    "market_value": "MarketValue"
+  },
+  "option_markers": [],
+  "cash_markers": ["y"]
+}

@@ -47,7 +47,7 @@ you what your held asset's beta is.
 
 ```
 schemas/       the three JSON Schemas — the contract every surface shares
-examples/      synthetic structures, scenarios, a holdings CSV and column mappings
+examples/      synthetic structures, scenarios, holdings CSVs and column mappings
 vectors/       golden vectors emitted by the oracle
 reference/     the Python test oracle. Frozen. Not shipped, not maintained.
 packages/core/ TypeScript. Pure functions. No I/O, no network, no DOM.
@@ -69,6 +69,15 @@ npm run serve -w @first-floor/web      # or just open packages/web/dist/index.ht
 Four ways in, all converging on one structure document you review before any number is computed: a
 holdings CSV with a column mapping you save and reuse, a structure document, six numbers from a fact
 sheet, or a worked example.
+
+Take the holdings CSV from the issuer's own fund page — every one of them publishes what the fund
+holds, daily — and upload it as it downloaded. Several common export shapes are recognised on sight
+and fill the column mapping in themselves, so don't rename the file: the name is part of how that
+works, though a renamed file is still recognised from its columns. Recognition is data, not code
+(D-41): the profiles are ordinary mappings in `examples/mapping_*.json`, and teaching the page a new
+export is a JSON file rather than a patch. Whatever it works out is shown filled in and stays
+editable, and the two things a holdings file cannot record — where the underlying is trading, and the
+date you mean — are still asked for.
 
 The MCP server runs locally over stdio:
 

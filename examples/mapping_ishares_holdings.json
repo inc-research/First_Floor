@@ -1,0 +1,37 @@
+{
+  "schema_version": "0.2.0",
+  "name": "iShares fund holdings export",
+  "header_row": 9,
+  "option_name_format": "month_at",
+  "expiry_day": "last_business_day",
+  "option_identifier": "Name",
+  "match": {
+    "filename": "^(?<ticker>[A-Za-z0-9]{2,6})_holdings\\.csv$",
+    "headers": [
+      "Ticker",
+      "Name",
+      "Type",
+      "Sector",
+      "Asset Class",
+      "Market Value",
+      "Weight (%)",
+      "Notional Value",
+      "Shares",
+      "Price",
+      "Exchange",
+      "Currency"
+    ],
+    "preamble": ["Fund Holdings as of", "Shares Outstanding", "Inception Date"]
+  },
+  "columns": {
+    "identifier": "Ticker",
+    "name": "Name",
+    "asset_class": "Asset Class",
+    "quantity": "Shares",
+    "price": "Price",
+    "market_value": "Market Value",
+    "sector": "Sector"
+  },
+  "option_markers": ["option", "derivative"],
+  "cash_markers": ["cash", "money market"]
+}
