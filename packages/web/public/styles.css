@@ -1,6 +1,24 @@
 /* SPDX-License-Identifier: MIT */
 
+/*
+ * Three faces, and only three.
+ *
+ * Arvo, a slab serif, for the wordmark and every heading — it is the voice the
+ * page speaks in its own name. Newsreader for everything the page says,
+ * headings excepted: it is a reading face, and most of what is here is meant to
+ * be read rather than scanned. Monospace stays on the form fields, where a
+ * strike and a level are numbers being checked digit by digit and proportional
+ * figures make that harder than it needs to be.
+ *
+ * Both webfaces are embedded in this stylesheet at build time, never linked.
+ * The system stacks after them are what renders in the half second before they
+ * decode, and what renders for good if someone strips the fonts out.
+ */
 :root {
+  --font-title: 'Arvo', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-body: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
   --ink: #16181d;
   --ink-soft: #4a5058;
   --ink-faint: #767d87;
@@ -38,7 +56,7 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font: 16px/1.6 ui-serif, Georgia, 'Times New Roman', serif;
+  font: 16px/1.6 var(--font-body);
 }
 
 #app { max-width: 62rem; margin: 0 auto; padding: 0 1.25rem 5rem; }
@@ -55,16 +73,32 @@ header.masthead {
   margin-bottom: 2rem;
 }
 
+/*
+ * The wordmark. Uppercased here rather than in the markup, so the accessible
+ * name and the page title stay the ordinary "First Floor" a screen reader
+ * should say and a search result should show.
+ */
 .masthead h1 {
-  font-size: 1.3rem;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.15rem;
   margin: 0;
-  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
 }
 
-.masthead h1 span { color: var(--ink-faint); font-weight: 400; }
+/* The tagline rides along inside the h1 and is not part of the mark. */
+.masthead h1 span {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.95rem;
+  color: var(--ink-faint);
+  text-transform: none;
+  letter-spacing: 0;
+}
 
 .masthead .as-of {
-  font: 500 0.8rem/1 ui-sans-serif, system-ui, sans-serif;
+  font: 500 0.8rem/1 var(--font-body);
   color: var(--ink-soft);
   background: var(--accent-soft);
   padding: 0.35rem 0.6rem;
@@ -74,7 +108,7 @@ header.masthead {
 nav.masthead-nav { margin-left: auto; display: flex; gap: 1rem; align-items: center; }
 
 nav.masthead-nav a {
-  font: 0.85rem/1 ui-sans-serif, system-ui, sans-serif;
+  font: 0.85rem/1 var(--font-body);
   color: var(--ink-soft);
   text-decoration: none;
   border-bottom: 1px solid transparent;
@@ -87,20 +121,27 @@ nav.masthead-nav a[aria-current='page'] { color: var(--ink); border-bottom-color
 
 /* ---------------------------------------------------------------- typography */
 
+/*
+ * Headings in the title face. Arvo is a slab and sets heavier than the sans it
+ * replaces, so the sizes come down a little and the tracking opens up rather
+ * than tightening — negative tracking on a slab closes the counters.
+ */
+h2, h3, h4 { font-family: var(--font-title); font-weight: 700; }
+
 h2 {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   margin: 2.5rem 0 0.75rem;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
 }
 
-h3 { font-size: 0.95rem; margin: 1.5rem 0 0.5rem; }
+h3 { font-size: 0.9rem; margin: 1.5rem 0 0.5rem; }
 
 p { max-width: var(--measure); }
 
 .lede { font-size: 1.05rem; color: var(--ink-soft); max-width: var(--measure); }
 
 .small {
-  font: 0.85rem/1.5 ui-sans-serif, system-ui, sans-serif;
+  font: 0.85rem/1.5 var(--font-body);
   color: var(--ink-soft);
 }
 
@@ -136,8 +177,8 @@ p { max-width: var(--measure); }
 /* ---------------------------------------------------------------- figures */
 
 .headline {
-  font: 600 2rem/1.1 ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.02em;
+  font: 700 1.75rem/1.15 var(--font-title);
+  letter-spacing: -0.005em;
   margin: 0.25rem 0 0.75rem;
 }
 
@@ -159,14 +200,14 @@ p { max-width: var(--measure); }
 
 .assumptions h4 {
   margin: 0 0 0.4rem;
-  font: 600 0.75rem/1 ui-sans-serif, system-ui, sans-serif;
+  font: 700 0.7rem/1 var(--font-title);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--ink-soft);
 }
 
 .assumptions ul { margin: 0; padding-left: 1.1rem; }
-.assumptions li { font: 0.85rem/1.5 ui-sans-serif, system-ui, sans-serif; color: var(--ink-soft); }
+.assumptions li { font: 0.85rem/1.5 var(--font-body); color: var(--ink-soft); }
 
 .blocked {
   background: var(--warn-soft);
@@ -176,7 +217,21 @@ p { max-width: var(--measure); }
 }
 
 .blocked ul { margin: 0.5rem 0 0; padding-left: 1.1rem; }
-.blocked li { font: 0.85rem/1.5 ui-sans-serif, system-ui, sans-serif; }
+.blocked li { font: 0.85rem/1.5 var(--font-body); }
+
+/* The affirmative counterpart of .blocked: something was worked out, and here
+   is what and why. Same shape, accent rather than warning. */
+.recognised {
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  padding: 0.9rem 1.1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 1rem 0;
+  max-width: var(--measure);
+}
+
+.recognised strong { font-family: var(--font-title); font-size: 0.9rem; }
+.recognised p { margin: 0.35rem 0 0; }
 
 /* ---------------------------------------------------------------- tables */
 
@@ -185,7 +240,7 @@ p { max-width: var(--measure); }
 table {
   border-collapse: collapse;
   width: 100%;
-  font: 0.9rem/1.4 ui-sans-serif, system-ui, sans-serif;
+  font: 0.9rem/1.4 var(--font-body);
   margin: 0.5rem 0;
 }
 
@@ -227,7 +282,7 @@ td.num { font-variant-numeric: tabular-nums; }
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  font: 0.8rem/1.3 ui-sans-serif, system-ui, sans-serif;
+  font: 0.8rem/1.3 var(--font-body);
   color: var(--ink-soft);
   margin-bottom: 0.25rem;
 }
@@ -237,7 +292,7 @@ td.num { font-variant-numeric: tabular-nums; }
 .slider input[type='range'] { width: 100%; accent-color: var(--accent); }
 
 button, .btn {
-  font: 500 0.85rem/1 ui-sans-serif, system-ui, sans-serif;
+  font: 500 0.85rem/1 var(--font-body);
   padding: 0.55rem 0.9rem;
   border: 1px solid var(--rule);
   background: var(--panel);
@@ -271,15 +326,15 @@ button.primary:hover { filter: brightness(1.1); }
 
 .field label {
   display: block;
-  font: 500 0.85rem/1.4 ui-sans-serif, system-ui, sans-serif;
+  font: 500 0.85rem/1.4 var(--font-body);
   margin-bottom: 0.25rem;
 }
 
-.field .hint { font: 0.78rem/1.45 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint); margin-top: 0.2rem; }
+.field .hint { font: 0.78rem/1.45 var(--font-body); color: var(--ink-faint); margin-top: 0.2rem; }
 
 input[type='text'], input[type='number'], input[type='date'], select, textarea {
   width: 100%;
-  font: 0.9rem/1.5 ui-monospace, 'SF Mono', Menlo, monospace;
+  font: 0.9rem/1.5 var(--font-mono);
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
@@ -299,7 +354,7 @@ footer.disclaimer {
   margin-top: 4rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--rule);
-  font: 0.8rem/1.6 ui-sans-serif, system-ui, sans-serif;
+  font: 0.8rem/1.6 var(--font-body);
   color: var(--ink-faint);
   max-width: var(--measure);
 }
@@ -313,7 +368,7 @@ footer.disclaimer {
   color: var(--paper);
   padding: 0.6rem 1rem;
   border-radius: var(--radius);
-  font: 0.85rem/1 ui-sans-serif, system-ui, sans-serif;
+  font: 0.85rem/1 var(--font-body);
 }
 
 @media (prefers-color-scheme: dark) {

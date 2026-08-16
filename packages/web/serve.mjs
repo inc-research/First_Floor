@@ -35,9 +35,13 @@ createServer(async (req, res) => {
     const body = await readFile(join(DIST, relative));
     res.writeHead(200, {
       'content-type': TYPES[extname(relative)] ?? 'application/octet-stream',
-      // The page makes no network calls; this makes that the browser's rule too.
+      // The page makes no network calls; this makes that the browser's rule
+      // too. `font-src data:` and nothing else: the faces are embedded in the
+      // stylesheet, so a font that had to be fetched would be a mistake, and
+      // this is where the mistake shows up rather than in production.
       'content-security-policy':
-        "default-src 'none'; script-src 'self' 'unsafe-eval'; style-src 'self'; img-src data:; connect-src 'none'",
+        "default-src 'none'; script-src 'self' 'unsafe-eval'; style-src 'self'; img-src data:; " +
+        "font-src data:; connect-src 'none'",
     }).end(body);
   } catch {
     res.writeHead(404).end('not found');

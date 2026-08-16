@@ -308,6 +308,18 @@ its columns alone.
 *Reverses if:* profiles start needing per-issuer behaviour that no mapping field can express. The
 answer then is a new mapping field, and only if that fails is it a new decision.
 
+### D-42 · Two faces, embedded in the stylesheet, never linked
+Settled 16 August 2026. Arvo for the wordmark and headings, Newsreader for everything else,
+monospace kept on the form fields where a strike is checked digit by digit. Both are vendored under
+`packages/web/fonts/` and base64'd into `dist/styles.css` at build time.
+
+A `<link>` to a font host was not on the table: it is a network call on every open, and it tells that
+host who is reading a page whose entire premise is that nobody is told anything (D-22). Separate
+woff2 files alongside the CSS would have kept the page smaller but breaks the moment someone moves
+`index.html` without the folder, and the file:// case is the one that has to work. The cost is about
+90 KB of embedded font; the build asserts the stylesheet contains no `url()` that is not a `data:`
+URI, so the promise is checked rather than remembered.
+
 ---
 
 ## Open

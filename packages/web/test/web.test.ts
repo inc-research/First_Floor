@@ -154,3 +154,42 @@ describe('the built bundle', () => {
     assert.match(bundle, /is an input, not a measurement/i);
   });
 });
+
+describe('the built stylesheet', () => {
+  let css: string;
+  try {
+    css = readText('packages/web/dist/styles.css');
+  } catch {
+    throw new Error(
+      'packages/web/dist/styles.css is missing. Run `npm run build -w @first-floor/web` first — ' +
+        'the faces are embedded at build time, so the source stylesheet has none of them in it.',
+    );
+  }
+
+  it('carries both faces itself rather than fetching them', () => {
+    // A <link> to a font host would be a network call on every open, and would
+    // tell that host who is reading a page whose whole premise is that nobody
+    // is told anything (D-22).
+    assert.match(css, /@font-face[^}]*font-family:\s*'Arvo'/);
+    assert.match(css, /@font-face[^}]*font-family:\s*'Newsreader'/);
+    const external = [...css.matchAll(/url\(\s*['"]?([^'")]+)/g)]
+      .map((m) => m[1]!)
+      .filter((u) => !u.startsWith('data:'));
+    assert.deepEqual(external, [], 'the stylesheet must fetch nothing');
+    assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(css));
+  });
+
+  it('keeps the form fields monospaced', () => {
+    // The one exception to the two house faces: a strike and a level are
+    // numbers being checked digit by digit.
+    assert.match(css, /--font-mono:\s*ui-monospace/);
+    assert.match(css, /input\[type='text'\][^}]*var\(--font-mono\)/);
+  });
+
+  it('routes every family through a token, so there is one place to change it', () => {
+    for (const token of ['--font-title', '--font-body', '--font-mono']) {
+      assert.match(css, new RegExp(`${token}:`), `${token} is not defined`);
+    }
+    assert.ok(!/ui-sans-serif/.test(css), 'a stray system stack means a rule was missed');
+  });
+});
