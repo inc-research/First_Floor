@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: MIT
+#
+# CONTRIBUTING.md declares seven invariants and a rule that the oracle is the
+# authority on arithmetic. This runs the ones a machine can check on every push
+# and every pull request, so they are enforced rather than announced.
+#
+# The two that matter most and are easiest to lose:
+#
+#   - Nothing leaves the machine. `npm run build -w @first-floor/web` fails the
+#     build if the bundle acquires a network call site or the stylesheet a
+#     url() that is not a data: URI, and the web tests assert the same of the
+#     built artefact rather than the intention.
+#   - The oracle reproduces both vector files byte for byte. A change to the
+#     arithmetic that moves a figure shows up here as a diff, which is the
+#     point: where the spec and the oracle disagree, the spec is wrong.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The test scripts run node --test over .ts files with no flag, so the
+        # floor is the first release with unflagged type stripping. 20 does not
+        # run these tests at all, whatever engines used to say.
+        node: ['22.x', '24.x']
+
+    name: node ${{ matrix.node }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build the workspace
+        run: npm run build
+
+      - name: Build the page
+        # Asserts invariant 7 on the artefact: no network call sites in the
+        # bundle, no external url() in the stylesheet.
+        run: npm run build -w @first-floor/web
+
+      - name: Test
+        # Web tests read dist/, so this runs after both builds.
+        run: npm test
+
+  oracle:
+    runs-on: ubuntu-latest
+    name: oracle vectors
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: The oracle reproduces both vector files byte for byte
+        # No dependencies and no tolerance: byte-identical or the job fails.
+        run: |
+          set -euo pipefail
+          python3 reference/oracle.py \
+            examples/example_a_laddered_floor.json \
+            examples/example_scenario.json > /tmp/example_a.json
+          diff --unified /tmp/example_a.json vectors/example_a.json
+          python3 reference/oracle.py \
+            examples/example_c_minimal_hand_typed.json \
+            examples/scenario_minimal.json > /tmp/example_c.json
+          diff --unified /tmp/example_c.json vectors/example_c.json
+
+  clone:
+    runs-on: ubuntu-latest
+    name: a fresh clone is not missing anything
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: npm
+
+      - run: npm ci
+
+      - name: No real issuer file was committed
+        # D-31: the repository ships synthetic examples only. The real exports
+        # live in an ignored folder on the author's machine, so a tracked CSV
+        # outside examples/ means the ignore rules were bypassed.
+        run: |
+          set -euo pipefail
+          stray="$(git ls-files '*.csv' '*.xlsx' '*.xls' '*.tsv' | grep -v '^examples/' || true)"
+          if [ -n "$stray" ]; then
+            echo "holdings files committed outside examples/:"
+            echo "$stray"
+            exit 1
+          fi
+
+      - name: The recognition smoke test degrades quietly without that folder
+        # It is not part of `npm test` on purpose. What CI checks is that it
+        # says so and exits 0 rather than failing a clone that never had the
+        # real files.
+        run: npm run smoke:recognise

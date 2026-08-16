@@ -1,0 +1,21 @@
+# The fixtures in examples/ are parsed byte for byte by the CSV adapter's tests,
+# and the two vector files in vectors/ are compared byte for byte against the
+# oracle's output. A checkout that rewrote line endings would fail both for a
+# reason that looks nothing like the cause, so everything text is LF on disk
+# regardless of the platform it was cloned onto.
+* text=auto eol=lf
+
+# Binary, and marked so rather than sniffed: a diff of a woff2 helps nobody and
+# a normalisation pass would corrupt one.
+*.woff2 binary
+
+# Generated from the files beside them. Diffs are noise in review; the
+# generators in scripts/ are what to read instead.
+packages/core/src/adapters/profiles.generated.ts linguist-generated=true
+packages/core/src/schema/schemas.generated.ts    linguist-generated=true
+packages/web/src/examples.generated.ts           linguist-generated=true
+
+# GitHub's language stats otherwise read this as a Python project on the
+# strength of one frozen oracle it is told never to maintain.
+reference/* linguist-vendored=true
+vectors/*   linguist-generated=true

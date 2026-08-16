@@ -8,9 +8,24 @@ __pycache__/
 # Per-machine tool settings. Shared settings belong in .claude/settings.json.
 .claude/settings.local.json
 
-# Holdings files are the user's own data and must never be committed.
+# Holdings files are the user's own data and must never be committed. The
+# repository ships synthetic look-alikes only (D-31), and those live in
+# examples/ and are the sole exception.
+#
+# A holdings file does not always arrive as .csv: issuer pages hand out .xlsx
+# and .xls, and a spreadsheet saved back out can be .tsv or .txt. The extension
+# list is the second line of defence — the first is that the folder real
+# downloads land in is ignored whole, whatever ends up in it.
 *.csv
+*.xlsx
+*.xls
+*.tsv
 !examples/*.csv
+
+# Real issuer exports, kept on disk for `npm run smoke:recognise` and never
+# committed. The script says so and exits quietly when the folder is absent, so
+# a fresh clone is not missing anything it needs.
+template_input_csv_set/
 
 # Built web bundle and emitted declarations.
 packages/web/dist/
